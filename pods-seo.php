@@ -136,18 +136,21 @@ function pods_seo_pre_update_option_wpseo_xml ( $value, $old_value ) {
 add_filter( 'wpseo_sitemap_index', 'pods_seo_sitemap_index' );
 function pods_seo_sitemap_index () {
 
+	/** @global WP_Rewrite $wp_rewrite */
+	global $wp_rewrite;
+
 	// Can't do anything if pods has been deactivated
 	if ( !function_exists( 'pods' ) ) {
-		return;
+		return '';
 	}
 
-	$base_url = $GLOBALS[ 'wp_rewrite' ]->using_index_permalinks() ? 'index.php/' : '';
+	$base_url = $wp_rewrite->using_index_permalinks() ? 'index.php/' : '';
 	$option_name = PODS_SEO_XML_OPTION_NAME;
 	$xml_options = ( function_exists( 'is_network_admin' ) && is_network_admin() ) ? get_site_option( $option_name ) : get_option( $option_name );
 
 	// Nothing to be done if no options are set
 	if ( !is_array( $xml_options ) || 0 == count( $xml_options ) ) {
-		return;
+		return '';
 	}
 
 	$output = '';
@@ -181,6 +184,7 @@ function pods_seo_sitemap_index () {
 
 /**
  * Add action hooks for each of the xml files we've added to the index
+ * ToDo: this and the sitemap index generator share a lot of code; DRY
  */
 add_action( 'init', 'pods_seo_register_xml_hooks' );
 function pods_seo_register_xml_hooks () {
@@ -221,36 +225,50 @@ function pods_seo_register_xml_hooks () {
 }
 
 /**
- * Proof of concept only
+ * Generate individual sitemap files.  Called via the 'wpseo_do_sitemap_*' hooks
  */
 function pods_seo_xml_sitemap () {
+
+	/** @global WPSEO_Sitemaps $wpseo_sitemaps */
+	global $wpseo_sitemaps;
 
 	// Bail if either Pods or WordPress SEO are missing
 	if ( !class_exists( 'WPSEO_Sitemaps' ) || !function_exists( 'pods' ) ) {
 		return;
 	}
 
-	/** @global WPSEO_Sitemaps $wpseo_sitemaps ; */
-	global $wpseo_sitemaps;
+	$sitemap = get_query_var( 'sitemap' );
+	if ( empty( $sitemap ) ) {
+		return;
+	}
+
+	$pod_name = $sitemap;
+	if ( substr( $pod_name, 0, strlen( PODS_SEO_SITEMAP_PREFIX ) ) == PODS_SEO_SITEMAP_PREFIX ) {
+		$pod_name = substr( $pod_name, strlen( PODS_SEO_SITEMAP_PREFIX ) );
+	}
+
+	$params = array(
+		'orderby' => 't.ID DESC',
+		'limit'   => -1
+	);
+	$pod = pods( $pod_name, $params );
 
 	//Build the full sitemap
 	$sitemap = "<urlset xmlns:xsi='http://www.w3.org/2001/XMLSchema-instance' ";
 	$sitemap .= "xsi:schemaLocation='http://www.sitemaps.org/schemas/sitemap/0.9 http://www.sitemaps.org/schemas/sitemap/0.9/sitemap.xsd' ";
 	$sitemap .= "xmlns='http://www.sitemaps.org/schemas/sitemap/0.9'>\n";
 
-	// ToDo: loop through the items for this pod, this is hard-coded for testing
+	while ( $pod->fetch() ) {
 
-	$sitemap .= "<url>\n";
-	$sitemap .= "<loc>" . home_url() . "/bob-is-your-uncle/" . "</loc>\n";
-	$sitemap .= "<lastmod>2013-11-27T18:33:23+00:00</lastmod>\n";
-	$sitemap .= "<changefreq>weekly</changefreq>\n";
-	$sitemap .= "<priority>0.5</priority>\n";
-	$sitemap .= "</url>\n";
-
-	// ToDo: end of loop
+		$sitemap .= "<url>\n";
+		$sitemap .= "<loc>" . $pod->display( 'detail_url' ) . "</loc>\n";
+		$sitemap .= "<lastmod>2013-11-27T18:33:23+00:00</lastmod>\n"; // ToDo: get real date here
+		$sitemap .= "<changefreq>weekly</changefreq>\n"; // ToDo: provide filter
+		$sitemap .= "<priority>0.5</priority>\n"; // ToDo: provide filter
+		$sitemap .= "</url>\n";
+	}
 
 	$sitemap .= "</urlset>\n";
 
 	$wpseo_sitemaps->set_sitemap( $sitemap );
-
 }
