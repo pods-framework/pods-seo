@@ -3,7 +3,7 @@
 Plugin Name: Pods SEO
 Plugin URI: http://pods.io/
 Description: Currently integrates with the WordPress SEO XML sitemap generation process
-Version: 1.0.0
+Version: 0.9.0
 Author: Pods Framework Team
 Author URI: http://pods.io/about/
 
@@ -24,13 +24,15 @@ along with this program; if not, write to the Free Software
 Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 */
 
-define ( 'PODS_WPSEO_XML_OPTION_NAME', 'pods_wpseo_xml' );
+define ( 'PODS_SEO_XML_OPTION_NAME', 'pods_wpseo_xml' );
+define ( 'PODS_SEO_ACT_OPTION_PREFIX', 'pods_act-' );
+define ( 'PODS_SEO_SITEMAP_PREFIX', 'pods_' );
 
 /**
  * Add checkboxes for Pods' ACTs into the XML sitemaps form
  */
-add_action( 'wpseo_xmlsitemaps_config', 'pods_xmlsitemaps_config' );
-function pods_xmlsitemaps_config () {
+add_action( 'wpseo_xmlsitemaps_config', 'pods_seo_xmlsitemaps_config' );
+function pods_seo_xmlsitemaps_config () {
 
 	// Bail now if pods or  activated
 	if ( !function_exists( 'pods' ) || !function_exists( 'wpseo_init' ) ) {
@@ -62,7 +64,7 @@ function pods_xmlsitemaps_config () {
 
 	// Checkboxes for each ACT
 	foreach ( $available_acts as $this_act ) {
-		echo pods_act_checkbox( 'pods_act-' . $this_act[ 'name' ], $this_act[ 'label' ] . ' (<code>' . $this_act[ 'name' ] . '</code>)' );
+		echo pods_seo_act_checkbox( PODS_SEO_ACT_OPTION_PREFIX . $this_act[ 'name' ], $this_act[ 'label' ] . ' (<code>' . $this_act[ 'name' ] . '</code>)' );
 	}
 }
 
@@ -72,9 +74,9 @@ function pods_xmlsitemaps_config () {
  *
  * @return string
  */
-function pods_act_checkbox ( $var, $label ) {
+function pods_seo_act_checkbox ( $var, $label ) {
 
-	$option_name = PODS_WPSEO_XML_OPTION_NAME;
+	$option_name = PODS_SEO_XML_OPTION_NAME;
 
 	if ( function_exists( 'is_network_admin' ) && is_network_admin() ) {
 		$options = get_site_option( $option_name );
@@ -109,10 +111,10 @@ function pods_act_checkbox ( $var, $label ) {
  * @param $value
  * @param $old_value
  */
-add_filter( 'pre_update_option_wpseo_xml', 'pods_pre_update_option_wpseo_xml', 10, 2 );
-function pods_pre_update_option_wpseo_xml ( $value, $old_value ) {
+add_filter( 'pre_update_option_wpseo_xml', 'pods_seo_pre_update_option_wpseo_xml', 10, 2 );
+function pods_seo_pre_update_option_wpseo_xml ( $value, $old_value ) {
 
-	$option_name = PODS_WPSEO_XML_OPTION_NAME;
+	$option_name = PODS_SEO_XML_OPTION_NAME;
 
 	// Nothing to do if we don't have any options in the post data
 	if ( !isset( $_POST[ $option_name ] ) ) {
@@ -129,54 +131,126 @@ function pods_pre_update_option_wpseo_xml ( $value, $old_value ) {
 }
 
 /**
- * Inject custom item into the sitemap index
- *
- * Proof of concept only
+ * Add selected Pods ACTs into the sitemap index
  */
-add_filter( 'wpseo_sitemap_index', 'pods_sitemap_custom_items' );
-function pods_sitemap_custom_items () {
+add_filter( 'wpseo_sitemap_index', 'pods_seo_sitemap_index' );
+function pods_seo_sitemap_index () {
 
-	$base = $GLOBALS[ 'wp_rewrite' ]->using_index_permalinks() ? 'index.php/' : '';
+	// Can't do anything if pods has been deactivated
+	if ( !function_exists( 'pods' ) ) {
+		return;
+	}
 
-	// ToDo Loop through pods that have be selected for sitemaps; hard-coded for prototyping
-	// We'll need to have an action hook for each Pod
-	$output = "<sitemap>\n";
-	$output .= "<loc>" . home_url( $base . 'pods-sitemap.xml' ) . "</loc>\n";
-	$output .= "<lastmod>2013-11-29T21:57:43+00:00</lastmod>\n";
-	$output .= "</sitemap>\n";
+	$base_url = $GLOBALS[ 'wp_rewrite' ]->using_index_permalinks() ? 'index.php/' : '';
+	$option_name = PODS_SEO_XML_OPTION_NAME;
+	$xml_options = ( function_exists( 'is_network_admin' ) && is_network_admin() ) ? get_site_option( $option_name ) : get_option( $option_name );
+
+	// Nothing to be done if no options are set
+	if ( !is_array( $xml_options ) || 0 == count( $xml_options ) ) {
+		return;
+	}
+
+	$output = '';
+	$pods_api = pods_api();
+	foreach ( $xml_options as $key => $value ) {
+
+		// Pull the option prefix off to get the Pod name
+		$pod_name = $key;
+		if ( substr( $pod_name, 0, strlen( PODS_SEO_ACT_OPTION_PREFIX ) ) == PODS_SEO_ACT_OPTION_PREFIX ) {
+			$pod_name = substr( $pod_name, strlen( PODS_SEO_ACT_OPTION_PREFIX ) );
+		}
+
+		$pod = $pods_api->load_pod( $pod_name );
+
+		// Skip if we couldn't find the pod or it doesn't have a detail_url set
+		if ( !is_array( $pod ) || !isset( $pod[ 'options' ][ 'detail_url' ] ) ) {
+			continue;
+		}
+
+		$xml_filename = PODS_SEO_SITEMAP_PREFIX . $pod_name . '-sitemap.xml';
+
+		// ToDo: get the date for real
+		$output .= "<sitemap>\n";
+		$output .= "<loc>" . home_url( $base_url . $xml_filename ) . "</loc>\n";
+		$output .= "<lastmod>2013-11-29T21:57:43+00:00</lastmod>\n";
+		$output .= "</sitemap>\n";
+	}
 
 	return $output;
 }
 
 /**
- * Proof of concept only; we need an action hook for each Pod with a sitemap
+ * Add action hooks for each of the xml files we've added to the index
  */
-add_action( 'wpseo_do_sitemap_pods', 'pods_xml_sitemap' );
-function pods_xml_sitemap () {
+add_action( 'init', 'pods_seo_register_xml_hooks' );
+function pods_seo_register_xml_hooks () {
 
-	if ( class_exists( 'WPSEO_Sitemaps' ) ) {
-
-		/** @global WPSEO_Sitemaps $wpseo_sitemaps ; */
-		global $wpseo_sitemaps;
-
-		//Build the full sitemap
-		$sitemap = "<urlset xmlns:xsi='http://www.w3.org/2001/XMLSchema-instance' ";
-		$sitemap .= "xsi:schemaLocation='http://www.sitemaps.org/schemas/sitemap/0.9 http://www.sitemaps.org/schemas/sitemap/0.9/sitemap.xsd' ";
-		$sitemap .= "xmlns='http://www.sitemaps.org/schemas/sitemap/0.9'>\n";
-
-		// ToDo: loop through the items for this pod, this is hard-coded for testing
-
-		$sitemap .= "<url>\n";
-		$sitemap .= "<loc>" . home_url() . "/bob-is-your-uncle/" . "</loc>\n";
-		$sitemap .= "<lastmod>2013-11-27T18:33:23+00:00</lastmod>\n";
-		$sitemap .= "<changefreq>weekly</changefreq>\n";
-		$sitemap .= "<priority>0.5</priority>\n";
-		$sitemap .= "</url>\n";
-
-		// ToDo: end of loop
-
-		$sitemap .= "</urlset>\n";
-
-		$wpseo_sitemaps->set_sitemap( $sitemap );
+	// Bail if either Pods or WordPress SEO are missing
+	if ( !class_exists( 'WPSEO_Sitemaps' ) || !function_exists( 'pods' ) ) {
+		return;
 	}
+
+	$option_name = PODS_SEO_XML_OPTION_NAME;
+	$xml_options = ( function_exists( 'is_network_admin' ) && is_network_admin() ) ? get_site_option( $option_name ) : get_option( $option_name );
+
+	// Nothing to be done if no options are set
+	if ( !is_array( $xml_options ) || 0 == count( $xml_options ) ) {
+		return;
+	}
+
+	$output = '';
+	$pods_api = pods_api();
+	foreach ( $xml_options as $key => $value ) {
+
+		// Pull the option prefix off to get the Pod name
+		$pod_name = $key;
+		if ( substr( $pod_name, 0, strlen( PODS_SEO_ACT_OPTION_PREFIX ) ) == PODS_SEO_ACT_OPTION_PREFIX ) {
+			$pod_name = substr( $pod_name, strlen( PODS_SEO_ACT_OPTION_PREFIX ) );
+		}
+
+		$pod = $pods_api->load_pod( $pod_name );
+
+		// Skip if we couldn't find the pod or it doesn't have a detail_url set
+		if ( !is_array( $pod ) || !isset( $pod[ 'options' ][ 'detail_url' ] ) ) {
+			continue;
+		}
+
+		$action_hook = 'wpseo_do_sitemap_' . PODS_SEO_SITEMAP_PREFIX . $pod_name;
+		add_action( $action_hook, 'pods_seo_xml_sitemap' );
+	}
+}
+
+/**
+ * Proof of concept only
+ */
+function pods_seo_xml_sitemap () {
+
+	// Bail if either Pods or WordPress SEO are missing
+	if ( !class_exists( 'WPSEO_Sitemaps' ) || !function_exists( 'pods' ) ) {
+		return;
+	}
+
+	/** @global WPSEO_Sitemaps $wpseo_sitemaps ; */
+	global $wpseo_sitemaps;
+
+	//Build the full sitemap
+	$sitemap = "<urlset xmlns:xsi='http://www.w3.org/2001/XMLSchema-instance' ";
+	$sitemap .= "xsi:schemaLocation='http://www.sitemaps.org/schemas/sitemap/0.9 http://www.sitemaps.org/schemas/sitemap/0.9/sitemap.xsd' ";
+	$sitemap .= "xmlns='http://www.sitemaps.org/schemas/sitemap/0.9'>\n";
+
+	// ToDo: loop through the items for this pod, this is hard-coded for testing
+
+	$sitemap .= "<url>\n";
+	$sitemap .= "<loc>" . home_url() . "/bob-is-your-uncle/" . "</loc>\n";
+	$sitemap .= "<lastmod>2013-11-27T18:33:23+00:00</lastmod>\n";
+	$sitemap .= "<changefreq>weekly</changefreq>\n";
+	$sitemap .= "<priority>0.5</priority>\n";
+	$sitemap .= "</url>\n";
+
+	// ToDo: end of loop
+
+	$sitemap .= "</urlset>\n";
+
+	$wpseo_sitemaps->set_sitemap( $sitemap );
+
 }
