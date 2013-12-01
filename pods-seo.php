@@ -2,8 +2,8 @@
 /*
 Plugin Name: Pods SEO
 Plugin URI: http://pods.io/
-Description: Currently integrates with the WordPress SEO XML sitemap generation process
-Version: 0.9.0
+Description: Integrates Pods' ACTs with the WordPress SEO XML sitemap generation process
+Version: 1.0.0 Beta 1
 Author: Pods Framework Team
 Author URI: http://pods.io/about/
 
@@ -54,11 +54,10 @@ function pods_seo_xmlsitemaps_config () {
 		return;
 	}
 
-	// ToDo: Replace lorem
 	?>
 	<h2>Pods Advanced Content Types</h2>
 	<p>
-		Vestibulum semper nunc sed justo volutpat malesuada. Maecenas dictum velit sit amet urna pellentesque, in aliquam justo elementum. Cras et blandit enim. Sed ac blandit urna, non blandit nulla.
+		Select the Pods' Advanced Content Types you would like to generate sitemaps for:
 	</p>
 	<?php
 
@@ -201,7 +200,7 @@ function pods_seo_sitemap_index () {
 }
 
 /**
- * Add action hooks for each of the xml files we've added to the index
+ * Add action hooks for each of the xml files we've added to the index and filter hooks for Pods item save/delete
  * ToDo: this and the sitemap index generator share a lot of code; DRY
  */
 add_action( 'init', 'pods_seo_register_xml_hooks' );
@@ -236,9 +235,39 @@ function pods_seo_register_xml_hooks () {
 			continue;
 		}
 
-		$action_hook = 'wpseo_do_sitemap_' . PODS_SEO_SITEMAP_PREFIX . $pod_name;
-		add_action( $action_hook, 'pods_seo_xml_sitemap' );
+		$sitemap_action_hook = 'wpseo_do_sitemap_' . PODS_SEO_SITEMAP_PREFIX . $pod_name;
+		$pods_save_hook = 'pods_api_post_save_pod_item_' . $pod_name;
+		$pods_delete_hook = 'pods_api_post_delete_pod_item_' . $pod_name;
+
+		add_action( $sitemap_action_hook, 'pods_seo_xml_sitemap' );
+		add_filter( $pods_save_hook, 'pods_seo_xml_ping', 10, 2 );
+		add_filter( $pods_delete_hook, 'pods_seo_xml_ping', 10, 2 );
 	}
+}
+
+/**
+ * @param $pieces
+ * @param $is_new_item
+ */
+function pods_seo_xml_ping ( $pieces, $is_new_item ) {
+
+	// Bail if WordPress SEO isn't activated
+	if ( !function_exists( 'wpseo_ping_search_engines' ) ) {
+		return $pieces;
+	}
+
+	if ( WP_CACHE ) {
+		wp_schedule_single_event( time() + 300, 'wpseo_hit_sitemap_index' );
+	}
+
+	if ( defined( 'YOAST_SEO_PING_IMMEDIATELY' ) && YOAST_SEO_PING_IMMEDIATELY ) {
+		wpseo_ping_search_engines();
+	}
+	else {
+		wp_schedule_single_event( ( time() + 300 ), 'wpseo_ping_search_engines' );
+	}
+
+	return $pieces;
 }
 
 /**
@@ -265,10 +294,16 @@ function pods_seo_xml_sitemap () {
 		$pod_name = substr( $pod_name, strlen( PODS_SEO_SITEMAP_PREFIX ) );
 	}
 
-	$params = array(
-		'orderby' => 't.ID DESC',
-		'limit'   => -1
-	);
+	$pod = pods_api( $pod_name );
+
+	$params = array( 'limit' => -1 );
+	if ( isset( $pod->fields[ 'modified' ] ) ) {
+		$params[ 'orderby' ] = 't.modified DESC';
+	}
+	else {
+		$params[ 'orderby' ] = 't.ID DESC';
+	}
+
 	$pod = pods( $pod_name, $params );
 
 	//Build the full sitemap
