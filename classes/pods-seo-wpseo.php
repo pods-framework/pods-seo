@@ -32,8 +32,7 @@ class Pods_SEO_WPSEO {
 		}
 
 		// Look for ACTs with the detail_url set
-		$pods_api = pods_api();
-		$all_acts = $pods_api->load_pods( array( 'type' => 'pod' ) );
+		$all_acts = pods_api()->load_pods( array( 'type' => 'pod' ) );
 		$available_acts = array();
 		foreach ( $all_acts as $this_act ) {
 			if ( isset ( $this_act[ 'options' ][ 'detail_url' ] ) ) {
@@ -57,40 +56,6 @@ class Pods_SEO_WPSEO {
 		foreach ( $available_acts as $this_act ) {
 			echo $this->act_checkbox( self::ACT_OPTION_PREFIX . $this_act[ 'name' ], $this_act[ 'label' ] . ' (<code>' . $this_act[ 'name' ] . '</code>)' );
 		}
-	}
-
-	/**
-	 * @param $var
-	 * @param $label
-	 *
-	 * @return string
-	 */
-	public function act_checkbox ( $var, $label ) {
-
-		$option_name = self::XML_OPTION_NAME;
-
-		if ( function_exists( 'is_network_admin' ) && is_network_admin() ) {
-			$options = get_site_option( $option_name );
-		}
-		else {
-			$options = get_option( $option_name );
-		}
-
-		if ( !isset( $options[ $var ] ) ) {
-			$options[ $var ] = false;
-		}
-
-		if ( $options[ $var ] === true ) {
-			$options[ $var ] = 'on';
-		}
-
-		$output_label = '<label for="' . esc_attr( $var ) . '">' . $label . '</label>';
-		$class = 'checkbox double';
-
-		$output_input = "<input class='$class' type='checkbox' id='" . esc_attr( $var ) . "' name='" . esc_attr( $option_name ) . "[" . esc_attr( $var ) . "]' " . checked( $options[ $var ], 'on', false ) . '/>';
-		$output = $output_input . $output_label;
-
-		return $output . '<br class="clear" />';
 	}
 
 	/**
@@ -148,12 +113,7 @@ class Pods_SEO_WPSEO {
 		$pods_api = pods_api();
 		foreach ( $xml_options as $key => $value ) {
 
-			// Pull the option prefix off to get the Pod name
-			$pod_name = $key;
-			if ( substr( $pod_name, 0, strlen( self::ACT_OPTION_PREFIX ) ) == self::ACT_OPTION_PREFIX ) {
-				$pod_name = substr( $pod_name, strlen( self::ACT_OPTION_PREFIX ) );
-			}
-
+			$pod_name = $this->remove_prefix( self::ACT_OPTION_PREFIX, $key );
 			$pod = $pods_api->load_pod( $pod_name );
 
 			// Skip if we couldn't find the pod or it doesn't have a detail_url set
@@ -213,12 +173,7 @@ class Pods_SEO_WPSEO {
 		$pods_api = pods_api();
 		foreach ( $xml_options as $key => $value ) {
 
-			// Pull the option prefix off to get the Pod name
-			$pod_name = $key;
-			if ( substr( $pod_name, 0, strlen( self::ACT_OPTION_PREFIX ) ) == self::ACT_OPTION_PREFIX ) {
-				$pod_name = substr( $pod_name, strlen( self::ACT_OPTION_PREFIX ) );
-			}
-
+			$pod_name = $this->remove_prefix( self::ACT_OPTION_PREFIX, $key );
 			$pod = $pods_api->load_pod( $pod_name );
 
 			// Skip if we couldn't find the pod or it doesn't have a detail_url set
@@ -278,12 +233,7 @@ class Pods_SEO_WPSEO {
 			return;
 		}
 
-		// Pull the prefix off the front
-		$pod_name = $sitemap;
-		if ( substr( $pod_name, 0, strlen( self::SITEMAP_PREFIX ) ) == self::SITEMAP_PREFIX ) {
-			$pod_name = substr( $pod_name, strlen( self::SITEMAP_PREFIX ) );
-		}
-
+		$pod_name = $this->remove_prefix( self::SITEMAP_PREFIX, $sitemap);
 		$pod = pods_api( $pod_name );
 
 		$params = array( 'limit' => -1 );
@@ -324,4 +274,52 @@ class Pods_SEO_WPSEO {
 		$wpseo_sitemaps->set_sitemap( $sitemap );
 	}
 
+	/**
+	 * @param $var
+	 * @param $label
+	 *
+	 * @return string
+	 */
+	private function act_checkbox ( $var, $label ) {
+
+		$option_name = self::XML_OPTION_NAME;
+
+		if ( function_exists( 'is_network_admin' ) && is_network_admin() ) {
+			$options = get_site_option( $option_name );
+		}
+		else {
+			$options = get_option( $option_name );
+		}
+
+		if ( !isset( $options[ $var ] ) ) {
+			$options[ $var ] = false;
+		}
+
+		if ( $options[ $var ] === true ) {
+			$options[ $var ] = 'on';
+		}
+
+		$output_label = '<label for="' . esc_attr( $var ) . '">' . $label . '</label>';
+		$class = 'checkbox double';
+
+		$output_input = "<input class='$class' type='checkbox' id='" . esc_attr( $var ) . "' name='" . esc_attr( $option_name ) . "[" . esc_attr( $var ) . "]' " . checked( $options[ $var ], 'on', false ) . '/>';
+		$output = $output_input . $output_label;
+
+		return $output . '<br class="clear" />';
+	}
+
+	/**
+	 * @param $needle
+	 * @param $haystack
+	 *
+	 * @return string
+	 */
+	private function remove_prefix( $needle, $haystack ) {
+
+		if ( substr( $haystack, 0, strlen( $needle ) ) == $needle ) {
+			return substr( $haystack, strlen( $needle ) );
+		}
+
+		return $haystack;
+	}
 }
