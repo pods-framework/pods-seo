@@ -170,12 +170,30 @@ function pods_seo_sitemap_index () {
 			continue;
 		}
 
+		// Determine last modified date
+		if ( isset( $pod[ 'fields' ][ 'modified' ] ) ) {
+			$params = array(
+				'orderby' => 'modified DESC',
+				'limit'   => 1
+			);
+			$newest = pods( $pod_name, $params );
+			$lastmod = $newest->field( 'modified' );
+			if ( !empty( $lastmod ) ) {
+				mysql2date( "Y-m-d\TH:i:s+00:00", $lastmod );
+			}
+			else {
+				$lastmod = date( 'c' );
+			}
+		}
+		else {
+			$lastmod = date( 'c' );
+		}
+
 		$xml_filename = PODS_SEO_SITEMAP_PREFIX . $pod_name . '-sitemap.xml';
 
-		// ToDo: get the date for real
 		$output .= "<sitemap>\n";
 		$output .= "<loc>" . home_url( $base_url . $xml_filename ) . "</loc>\n";
-		$output .= "<lastmod>2013-11-29T21:57:43+00:00</lastmod>\n";
+		$output .= "<lastmod>$lastmod</lastmod>\n";
 		$output .= "</sitemap>\n";
 	}
 
@@ -202,7 +220,6 @@ function pods_seo_register_xml_hooks () {
 		return;
 	}
 
-	$output = '';
 	$pods_api = pods_api();
 	foreach ( $xml_options as $key => $value ) {
 
@@ -242,6 +259,7 @@ function pods_seo_xml_sitemap () {
 		return;
 	}
 
+	// Pull the prefix off the front
 	$pod_name = $sitemap;
 	if ( substr( $pod_name, 0, strlen( PODS_SEO_SITEMAP_PREFIX ) ) == PODS_SEO_SITEMAP_PREFIX ) {
 		$pod_name = substr( $pod_name, strlen( PODS_SEO_SITEMAP_PREFIX ) );
@@ -260,9 +278,17 @@ function pods_seo_xml_sitemap () {
 
 	while ( $pod->fetch() ) {
 
+		$lastmod = $pod->field( 'modified' );
+		if ( !empty( $lastmod ) ) {
+			$lastmod = mysql2date( "Y-m-d\TH:i:s+00:00", $lastmod );
+		}
+		else {
+			$lastmod = date( 'c' );
+		}
+
 		$sitemap .= "<url>\n";
 		$sitemap .= "<loc>" . $pod->display( 'detail_url' ) . "</loc>\n";
-		$sitemap .= "<lastmod>2013-11-27T18:33:23+00:00</lastmod>\n"; // ToDo: get real date here
+		$sitemap .= "<lastmod>$lastmod</lastmod>\n";
 		$sitemap .= "<changefreq>weekly</changefreq>\n"; // ToDo: provide filter
 		$sitemap .= "<priority>0.5</priority>\n"; // ToDo: provide filter
 		$sitemap .= "</url>\n";
