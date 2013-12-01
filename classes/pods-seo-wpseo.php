@@ -59,7 +59,7 @@ class Pods_SEO_WPSEO {
 	}
 
 	/**
-	 * Save out settings when the WordPress SEO XML sitemaps settings are saved.  We're hooking the WordPress
+	 * Save our settings when the WordPress SEO XML sitemaps settings are saved.  We're hooking the WordPress
 	 * filter in lieu of a reliable action hook (WordPress will exit update_option() without hooking the
 	 * update_option_{$option} action if no changes were made to the options being saved). Be careful to always
 	 * return $value untouched here, it belongs to WordPress SEO.
@@ -109,12 +109,12 @@ class Pods_SEO_WPSEO {
 			return '';
 		}
 
+		// $xml_options: key = prefixed pod name, value = 'on'
 		$output = '';
-		$pods_api = pods_api();
 		foreach ( $xml_options as $key => $value ) {
 
 			$pod_name = $this->remove_prefix( self::ACT_OPTION_PREFIX, $key );
-			$pod = $pods_api->load_pod( $pod_name );
+			$pod = pods_api()->load_pod( $pod_name );
 
 			// Skip if we couldn't find the pod or it doesn't have a detail_url set
 			if ( !is_array( $pod ) || !isset( $pod[ 'options' ][ 'detail_url' ] ) ) {
@@ -152,8 +152,8 @@ class Pods_SEO_WPSEO {
 	}
 
 	/**
-	 * Add action hooks for each of the xml files we've added to the index and filter hooks for Pods item save/delete
-	 * ToDo: this and the sitemap index generator share a lot of code; DRY
+	 * Add action hooks for each of the xml files we've added to the index
+	 * Add filter hooks for Pods item save/delete
 	 */
 	public function register_xml_hooks () {
 
@@ -170,11 +170,11 @@ class Pods_SEO_WPSEO {
 			return;
 		}
 
-		$pods_api = pods_api();
+		// $xml_options: key = prefixed pod name, value = 'on'
 		foreach ( $xml_options as $key => $value ) {
 
 			$pod_name = $this->remove_prefix( self::ACT_OPTION_PREFIX, $key );
-			$pod = $pods_api->load_pod( $pod_name );
+			$pod = pods_api()->load_pod( $pod_name );
 
 			// Skip if we couldn't find the pod or it doesn't have a detail_url set
 			if ( !is_array( $pod ) || !isset( $pod[ 'options' ][ 'detail_url' ] ) ) {
@@ -186,21 +186,26 @@ class Pods_SEO_WPSEO {
 			$pods_delete_hook = 'pods_api_post_delete_pod_item_' . $pod_name;
 
 			add_action( $sitemap_action_hook, array( $this, 'xml_sitemap' ) );
-			add_filter( $pods_save_hook, array( $this, 'xml_ping' ) );
-			add_filter( $pods_delete_hook, array( $this, 'xml_ping' ) );
+			add_filter( $pods_save_hook, array( $this, 'ping_search_engines' ) );
+			add_filter( $pods_delete_hook, array( $this, 'ping_search_engines' ) );
 		}
 	}
 
 	/**
+	 * ! This is a filter hook, ALWAYS return $pieces
+	 *
 	 * @param $pieces
+	 *
+	 * @return mixed
 	 */
-	public function xml_ping ( $pieces ) {
+	public function ping_search_engines ( $pieces ) {
 
 		// Bail if WordPress SEO isn't activated
 		if ( !function_exists( 'wpseo_ping_search_engines' ) ) {
 			return $pieces;
 		}
 
+		// Run now or delayed, as appropriate
 		if ( WP_CACHE ) {
 			wp_schedule_single_event( time() + 300, 'wpseo_hit_sitemap_index' );
 		}
@@ -228,22 +233,19 @@ class Pods_SEO_WPSEO {
 			return;
 		}
 
+		// Rewrite rules will set sitemap=pods_foo for pods_foo-sitemap.xml
 		$sitemap = get_query_var( 'sitemap' );
 		if ( empty( $sitemap ) ) {
 			return;
 		}
 
+		// Get the pod info first, we need to know if there is a 'modified' field to sort on
 		$pod_name = $this->remove_prefix( self::SITEMAP_PREFIX, $sitemap);
 		$pod = pods_api( $pod_name );
-
 		$params = array( 'limit' => -1 );
-		if ( isset( $pod->fields[ 'modified' ] ) ) {
-			$params[ 'orderby' ] = 't.modified DESC';
-		}
-		else {
-			$params[ 'orderby' ] = 't.ID DESC';
-		}
+		$params[ 'orderby' ] = ( isset( $pod->fields[ 'modified' ] ) ) ? 't.modified DESC' : 't.ID DESC';
 
+		// Load all the sorted items
 		$pod = pods( $pod_name, $params );
 
 		//Build the full sitemap
@@ -253,6 +255,7 @@ class Pods_SEO_WPSEO {
 
 		while ( $pod->fetch() ) {
 
+			// Use modified field if it exits, or current date/time
 			$lastmod = $pod->field( 'modified' );
 			if ( !empty( $lastmod ) ) {
 				$lastmod = mysql2date( "Y-m-d\TH:i:s+00:00", $lastmod );
@@ -275,6 +278,8 @@ class Pods_SEO_WPSEO {
 	}
 
 	/**
+	 * Based on the markup in wordpress-seo
+	 *
 	 * @param $var
 	 * @param $label
 	 *
