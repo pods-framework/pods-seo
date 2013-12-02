@@ -17,7 +17,7 @@ Check out http://pods.io/ for our User Guide, Forums, and other resources to hel
 = Our WordPress SEO plugin integration includes =
 
 * Adds Advanced Content Types to XML Sitemaps
-* Adds option to choose which Advanced Content Types will be included in XML Sitemaps
+* Adds option to choose which Advanced Content Types will be included in XML Sitemaps (Pod must have a Detail Page URL set)
 
 We're looking in the future at integrating with other features from WordPress SEO and integrating with other plugins too.
 
