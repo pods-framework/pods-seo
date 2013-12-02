@@ -4,7 +4,9 @@
  */
 class Pods_SEO_WPSEO {
 
-	const XML_OPTION_NAME = 'pods_wpseo_xml';
+	const OPTION_GROUP = 'pods_seo_wpseo_xml';
+
+	const OPTION_NAME = 'pods_wpseo_xml';
 
 	const ACT_OPTION_PREFIX = 'pods_act-';
 
@@ -13,7 +15,7 @@ class Pods_SEO_WPSEO {
 	/**
 	 *
 	 */
-	public function __construct() {
+	public function __construct () {
 
 		// Stop if WordPress SEO plugin not installed
 		if ( !function_exists( 'wpseo_init' ) ) {
@@ -22,16 +24,23 @@ class Pods_SEO_WPSEO {
 
 		$this->register_xml_hooks();
 
+		add_action( 'admin_init', array( $this, 'admin_init' ) );
 		add_action( 'wpseo_xmlsitemaps_config', array( $this, 'xmlsitemaps_config' ) );
 		add_filter( 'pre_update_option_wpseo_xml', array( $this, 'pre_update_option_wpseo_xml' ) );
 		add_filter( 'wpseo_sitemap_index', array( $this, 'sitemap_index' ) );
+	}
 
+	/**
+	 *
+	 */
+	public function admin_init () {
+		register_setting( self::OPTION_GROUP, self::OPTION_NAME );
 	}
 
 	/**
 	 * Add checkboxes for Pods' ACTs into the XML sitemaps form
 	 */
-	public function xmlsitemaps_config() {
+	public function xmlsitemaps_config () {
 
 		// Look for ACTs with the detail_url set
 		$all_acts = pods_api()->load_pods( array( 'type' => 'pod' ) );
@@ -40,7 +49,7 @@ class Pods_SEO_WPSEO {
 
 		foreach ( $all_acts as $this_act ) {
 			if ( isset ( $this_act[ 'options' ][ 'detail_url' ] ) ) {
-				$available_acts[] = $this_act;
+				$available_acts[ ] = $this_act;
 			}
 		}
 
@@ -48,12 +57,14 @@ class Pods_SEO_WPSEO {
 		if ( !is_array( $available_acts ) || 0 == count( $available_acts ) ) {
 			return;
 		}
-?>
-	<h2><?php _e( 'Pods Advanced Content Types', 'pods-seo' ); ?></h2>
-	<p>
-		<?php _e( 'Select the Advanced Content Types you would like to generate sitemaps for' ); ?>:
-	</p>
-<?php
+		?>
+		<h2><?php _e( 'Pods Advanced Content Types', 'pods-seo' ); ?></h2>
+		<p>
+			<?php _e( 'Select the Advanced Content Types you would like to generate sitemaps for' ); ?>:
+		</p>
+		<?php
+		settings_fields( self::OPTION_GROUP );
+
 		// Checkboxes for each ACT
 		foreach ( $available_acts as $this_act ) {
 			echo $this->act_checkbox( self::ACT_OPTION_PREFIX . $this_act[ 'name' ], $this_act[ 'label' ] . ' (<code>' . $this_act[ 'name' ] . '</code>)' );
@@ -62,48 +73,18 @@ class Pods_SEO_WPSEO {
 	}
 
 	/**
-	 * Save our settings when the WordPress SEO XML sitemaps settings are saved.  We're hooking the WordPress
-	 * filter in lieu of a reliable action hook (WordPress will exit update_option() without hooking the
-	 * update_option_{$option} action if no changes were made to the options being saved). Be careful to always
-	 * return $value untouched here, it belongs to WordPress SEO.
-	 *
-	 * @param $value
-	 *
-	 * @return
-	 */
-	public function pre_update_option_wpseo_xml( $value ) {
-
-		$option_name = self::XML_OPTION_NAME;
-
-		// No options selected, clear them all
-		if ( !isset( $_POST[ $option_name ] ) ) {
-			delete_option( $option_name );
-
-			return $value;
-		}
-
-		$pods_options = $_POST[ $option_name ];
-
-		if ( !is_array( $pods_options ) ) {
-			$pods_options = trim( $pods_options );
-		}
-
-		update_option( $option_name, wp_unslash( $pods_options ) );
-
-		return $value;
-
-	}
-
-	/**
 	 * Add selected Pods ACTs into the sitemap index
 	 */
-	public function sitemap_index() {
+	public function sitemap_index () {
 
 		/** @global WP_Rewrite $wp_rewrite */
 		global $wp_rewrite;
 
+		/** @global WPSEO_Sitemaps $wpseo_sitemaps */
+		global $wpseo_sitemaps;
+
 		$base_url = $wp_rewrite->using_index_permalinks() ? 'index.php/' : '';
-		$option_name = self::XML_OPTION_NAME;
+		$option_name = self::OPTION_NAME;
 		$xml_options = ( function_exists( 'is_network_admin' ) && is_network_admin() ) ? get_site_option( $option_name ) : get_option( $option_name );
 
 		// Nothing to be done if no options are set
@@ -127,7 +108,7 @@ class Pods_SEO_WPSEO {
 			if ( isset( $pod[ 'fields' ][ 'modified' ] ) ) {
 				$params = array(
 					'orderby' => 't.modified DESC',
-					'limit' => 1
+					'limit'   => 1
 				);
 				$newest = pods( $pod_name, $params );
 				$lastmod = $newest->field( 'modified' );
@@ -158,9 +139,9 @@ class Pods_SEO_WPSEO {
 	 * Add action hooks for each of the xml files we've added to the index
 	 * Add filter hooks for Pods item save/delete
 	 */
-	public function register_xml_hooks() {
+	public function register_xml_hooks () {
 
-		$option_name = self::XML_OPTION_NAME;
+		$option_name = self::OPTION_NAME;
 		$xml_options = ( function_exists( 'is_network_admin' ) && is_network_admin() ) ? get_site_option( $option_name ) : get_option( $option_name );
 
 		// Nothing to be done if no options are set
@@ -195,7 +176,7 @@ class Pods_SEO_WPSEO {
 	 *
 	 * @return mixed
 	 */
-	public function ping_search_engines( $pieces ) {
+	public function ping_search_engines ( $pieces ) {
 
 		// Bail if WordPress SEO isn't activated
 		if ( !function_exists( 'wpseo_ping_search_engines' ) ) {
@@ -221,7 +202,7 @@ class Pods_SEO_WPSEO {
 	/**
 	 * Generate individual sitemap files.  Called via the 'wpseo_do_sitemap_*' hooks
 	 */
-	public function xml_sitemap() {
+	public function xml_sitemap () {
 
 		/**
 		 * @global WPSEO_Sitemaps $wpseo_sitemaps
@@ -282,9 +263,9 @@ class Pods_SEO_WPSEO {
 	 *
 	 * @return string
 	 */
-	private function act_checkbox( $var, $label ) {
+	private function act_checkbox ( $var, $label ) {
 
-		$option_name = self::XML_OPTION_NAME;
+		$option_name = self::OPTION_NAME;
 
 		if ( function_exists( 'is_network_admin' ) && is_network_admin() ) {
 			$options = get_site_option( $option_name );
@@ -317,7 +298,7 @@ class Pods_SEO_WPSEO {
 	 *
 	 * @return string
 	 */
-	private function remove_prefix( $needle, $haystack ) {
+	private function remove_prefix ( $needle, $haystack ) {
 
 		if ( substr( $haystack, 0, strlen( $needle ) ) == $needle ) {
 			return substr( $haystack, strlen( $needle ) );
