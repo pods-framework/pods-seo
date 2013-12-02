@@ -37,7 +37,7 @@ global $pods_seo_wpseo;
  */
 function pods_seo_init() {
 
-	if ( function_exists( 'pods' ) ) {
+	if ( !function_exists( 'pods' ) ) {
 		return;
 	}
 
