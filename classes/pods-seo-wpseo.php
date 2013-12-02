@@ -4,7 +4,7 @@
  */
 class Pods_SEO_WPSEO {
 
-	const OPTION_GROUP = 'pods_seo_wpseo_xml';
+	const OPTION_GROUP = 'yoast_wpseo_xml_sitemap_options';
 
 	const OPTION_NAME = 'pods_wpseo_xml';
 
@@ -26,7 +26,6 @@ class Pods_SEO_WPSEO {
 
 		add_action( 'admin_init', array( $this, 'admin_init' ) );
 		add_action( 'wpseo_xmlsitemaps_config', array( $this, 'xmlsitemaps_config' ) );
-		add_filter( 'pre_update_option_wpseo_xml', array( $this, 'pre_update_option_wpseo_xml' ) );
 		add_filter( 'wpseo_sitemap_index', array( $this, 'sitemap_index' ) );
 	}
 
@@ -63,7 +62,7 @@ class Pods_SEO_WPSEO {
 			<?php _e( 'Select the Advanced Content Types you would like to generate sitemaps for' ); ?>:
 		</p>
 		<?php
-		settings_fields( self::OPTION_GROUP );
+		//settings_fields( self::OPTION_GROUP );
 
 		// Checkboxes for each ACT
 		foreach ( $available_acts as $this_act ) {
