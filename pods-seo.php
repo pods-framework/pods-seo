@@ -3,7 +3,7 @@
 Plugin Name: Pods SEO
 Plugin URI: http://pods.io/
 Description: Integrates Pods Advanced Content Types with WordPress SEO XML Sitemaps
-Version: 1.0.0 Beta 1
+Version: 1.0
 Author: Pods Framework Team
 Author URI: http://pods.io/about/
 
