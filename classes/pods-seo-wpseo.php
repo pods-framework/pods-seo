@@ -22,15 +22,51 @@ class Pods_SEO_WPSEO {
 			return;
 		}
 
-		$this->register_xml_hooks();
+		$this->register_hooks();
 
-		add_action( 'admin_init', array( $this, 'admin_init' ) );
-		add_action( 'wpseo_xmlsitemaps_config', array( $this, 'xmlsitemaps_config' ) );
-		add_filter( 'wpseo_sitemap_index', array( $this, 'sitemap_index' ) );
 	}
 
 	/**
-	 *
+	 * All the action and filter hooks we tie-in to
+	 */
+	public function register_hooks () {
+
+		// Hooks we always do
+		add_action( 'admin_init', array( $this, 'admin_init' ) );
+		add_action( 'wpseo_xmlsitemaps_config', array( $this, 'xmlsitemaps_config' ) );
+		add_filter( 'wpseo_sitemap_index', array( $this, 'sitemap_index' ) );
+
+		// Hooks that are dependent upon the options that have been set
+		$option_name = self::OPTION_NAME;
+		$xml_options = ( function_exists( 'is_network_admin' ) && is_network_admin() ) ? get_site_option( $option_name ) : get_option( $option_name );
+
+		// Nothing more to be done if no options are set
+		if ( !is_array( $xml_options ) || 0 == count( $xml_options ) ) {
+			return;
+		}
+
+		// $xml_options: key = prefixed pod name, value = 'on'
+		foreach ( $xml_options as $key => $value ) {
+			// Get pod name
+			$pod_name = $this->remove_prefix( self::ACT_OPTION_PREFIX, $key );
+
+			// Get pod
+			$pod = pods_api()->load_pod( $pod_name );
+
+			// Skip if we couldn't find the pod or it doesn't have a detail_url set
+			if ( !is_array( $pod ) || !isset( $pod[ 'options' ][ 'detail_url' ] ) || empty( $pod[ 'options' ][ 'detail_url' ] ) ) {
+				continue;
+			}
+
+			add_action( 'wpseo_do_sitemap_' . self::SITEMAP_PREFIX . $pod_name, array( $this, 'xml_sitemap' ) );
+			add_filter( 'pods_api_post_save_pod_item_' . $pod_name, array( $this, 'ping_search_engines' ) );
+			add_filter( 'pods_api_post_delete_pod_item_' . $pod_name, array( $this, 'ping_search_engines' ) );
+		}
+
+	}
+
+	/**
+	 * Hook into the settings API
 	 */
 	public function admin_init () {
 		register_setting( self::OPTION_GROUP, self::OPTION_NAME );
@@ -62,8 +98,6 @@ class Pods_SEO_WPSEO {
 			<?php _e( 'Select the Advanced Content Types you would like to generate sitemaps for' ); ?>:
 		</p>
 		<?php
-		//settings_fields( self::OPTION_GROUP );
-
 		// Checkboxes for each ACT
 		foreach ( $available_acts as $this_act ) {
 			echo $this->act_checkbox( self::ACT_OPTION_PREFIX . $this_act[ 'name' ], $this_act[ 'label' ] . ' (<code>' . $this_act[ 'name' ] . '</code>)' );
@@ -79,22 +113,23 @@ class Pods_SEO_WPSEO {
 		/** @global WP_Rewrite $wp_rewrite */
 		global $wp_rewrite;
 
-		/** @global WPSEO_Sitemaps $wpseo_sitemaps */
-		global $wpseo_sitemaps;
-
-		$base_url = $wp_rewrite->using_index_permalinks() ? 'index.php/' : '';
-		$option_name = self::OPTION_NAME;
-		$xml_options = ( function_exists( 'is_network_admin' ) && is_network_admin() ) ? get_site_option( $option_name ) : get_option( $option_name );
+		// Grab the options
+		if ( function_exists( 'is_network_admin' ) && is_network_admin() ) {
+			$xml_options = get_site_option( self::OPTION_NAME );
+		}
+		else {
+			$xml_options = get_option( self::OPTION_NAME );
+		}
 
 		// Nothing to be done if no options are set
 		if ( !is_array( $xml_options ) || 0 == count( $xml_options ) ) {
 			return '';
 		}
 
-		// $xml_options: key = prefixed pod name, value = 'on'
 		$output = '';
+		$base_url = $wp_rewrite->using_index_permalinks() ? 'index.php/' : '';
 		foreach ( $xml_options as $key => $value ) {
-
+			// $xml_options: key = prefixed pod name, value = 'on'
 			$pod_name = $this->remove_prefix( self::ACT_OPTION_PREFIX, $key );
 			$pod = pods_api()->load_pod( $pod_name );
 
@@ -103,31 +138,40 @@ class Pods_SEO_WPSEO {
 				continue;
 			}
 
-			// Determine last modified date
-			if ( isset( $pod[ 'fields' ][ 'modified' ] ) ) {
-				$params = array(
-					'orderby' => 't.modified DESC',
-					'limit'   => 1
-				);
-				$newest = pods( $pod_name, $params );
-				$lastmod = $newest->field( 'modified' );
-				if ( !empty( $lastmod ) ) {
-					mysql2date( "Y-m-d\TH:i:s+00:00", $lastmod );
+			// Break down into multiple xml files if needed
+			$item_count = pods( $pod_name )->find()->total_found();
+			$pages = ( $item_count > $this->get_max_entries() ) ? (int) ceil( $item_count / $this->get_max_entries() ) : 1;
+			for ( $i = 0; $i < $pages; $i++ ) {
+
+				// Determine last modified date
+				if ( isset( $pod[ 'fields' ][ 'modified' ] ) ) {
+					$params = array(
+						'orderby' => 't.modified DESC',
+						'limit'   => 1,
+						'offset'  => $this->get_max_entries() * $i
+					);
+					$newest = pods( $pod_name, $params );
+					$lastmod = $newest->field( 'modified' );
+					if ( !empty( $lastmod ) ) {
+						date( 'c', strtotime( $lastmod ) );
+					}
+					else {
+						$lastmod = date( 'c' );
+					}
 				}
 				else {
 					$lastmod = date( 'c' );
 				}
-			}
-			else {
-				$lastmod = date( 'c' );
-			}
 
-			$xml_filename = self::SITEMAP_PREFIX . $pod_name . '-sitemap.xml';
+				// Build the .xml file name
+				$sitemap_num = ( $pages > 1 ) ? $i + 1 : '';
+				$xml_filename = self::SITEMAP_PREFIX . $pod_name . '-sitemap' . $sitemap_num . '.xml';
 
-			$output .= "<sitemap>\n";
-			$output .= "<loc>" . home_url( $base_url . $xml_filename ) . "</loc>\n";
-			$output .= "<lastmod>$lastmod</lastmod>\n";
-			$output .= "</sitemap>\n";
+				$output .= "<sitemap>\n";
+				$output .= "<loc>" . home_url( $base_url . $xml_filename ) . "</loc>\n";
+				$output .= "<lastmod>" . htmlspecialchars( $lastmod ) . "</lastmod>\n";
+				$output .= "</sitemap>\n";
+			}
 		}
 
 		return $output;
@@ -135,36 +179,64 @@ class Pods_SEO_WPSEO {
 	}
 
 	/**
-	 * Add action hooks for each of the xml files we've added to the index
-	 * Add filter hooks for Pods item save/delete
+	 * Generate individual sitemap files.  Called via the 'wpseo_do_sitemap_*' hooks
 	 */
-	public function register_xml_hooks () {
+	public function xml_sitemap () {
 
-		$option_name = self::OPTION_NAME;
-		$xml_options = ( function_exists( 'is_network_admin' ) && is_network_admin() ) ? get_site_option( $option_name ) : get_option( $option_name );
+		/**
+		 * @global WPSEO_Sitemaps $wpseo_sitemaps
+		 */
+		global $wpseo_sitemaps;
 
-		// Nothing to be done if no options are set
-		if ( !is_array( $xml_options ) || 0 == count( $xml_options ) ) {
+		// Rewrite rules will set sitemap=pods_foo for pods_foo-sitemap.xml
+		$sitemap = get_query_var( 'sitemap' );
+		$page_num = ( 0 != (int) get_query_var( 'sitemap_n' ) ) ? (int) get_query_var( 'sitemap_n' ) : 1;
+
+		if ( empty( $sitemap ) ) {
 			return;
 		}
 
-		// $xml_options: key = prefixed pod name, value = 'on'
-		foreach ( $xml_options as $key => $value ) {
-			// Get pod name
-			$pod_name = $this->remove_prefix( self::ACT_OPTION_PREFIX, $key );
+		// Get the pod info first, we need to know if there is a 'modified' field to sort on
+		$pod_name = $this->remove_prefix( self::SITEMAP_PREFIX, $sitemap );
+		$pod = pods_api( $pod_name );
 
-			// Get pod
-			$pod = pods_api()->load_pod( $pod_name );
+		$sort = ( isset( $pod->fields[ 'modified' ] ) ) ? 't.modified DESC' : 't.ID DESC';
+		$params = array(
+			'orderby' => $sort,
+			'offset'  => $this->get_max_entries() * ( $page_num - 1 ),
+			'limit'   => $this->get_max_entries()
+		);
 
-			// Skip if we couldn't find the pod or it doesn't have a detail_url set
-			if ( !is_array( $pod ) || !isset( $pod[ 'options' ][ 'detail_url' ] ) || empty( $pod[ 'options' ][ 'detail_url' ] ) ) {
-				continue;
+		// Load all the sorted items
+		$pod = pods( $pod_name, $params );
+
+		//Build the full sitemap
+		$sitemap = "<urlset xmlns:xsi='http://www.w3.org/2001/XMLSchema-instance' ";
+		$sitemap .= "xsi:schemaLocation='http://www.sitemaps.org/schemas/sitemap/0.9 http://www.sitemaps.org/schemas/sitemap/0.9/sitemap.xsd' ";
+		$sitemap .= "xmlns='http://www.sitemaps.org/schemas/sitemap/0.9'>\n";
+
+		while ( $pod->fetch() ) {
+
+			// Use modified field if it exits, or current date/time
+			$lastmod = $pod->field( 'modified' );
+			if ( !empty( $lastmod ) ) {
+				$lastmod = date( 'c', strtotime( $lastmod ) );
+			}
+			else {
+				$lastmod = date( 'c' );
 			}
 
-			add_action( 'wpseo_do_sitemap_' . self::SITEMAP_PREFIX . $pod_name, array( $this, 'xml_sitemap' ) );
-			add_filter( 'pods_api_post_save_pod_item_' . $pod_name, array( $this, 'ping_search_engines' ) );
-			add_filter( 'pods_api_post_delete_pod_item_' . $pod_name, array( $this, 'ping_search_engines' ) );
+			$sitemap .= "<url>\n";
+			$sitemap .= "<loc>" . $pod->display( 'detail_url' ) . "</loc>\n";
+			$sitemap .= "<lastmod>" . htmlspecialchars( $lastmod ) . "</lastmod>\n";
+			$sitemap .= "<changefreq>weekly</changefreq>\n"; // ToDo: provide filter
+			$sitemap .= "<priority>0.5</priority>\n"; // ToDo: provide filter
+			$sitemap .= "</url>\n";
 		}
+
+		$sitemap .= "</urlset>\n";
+
+		$wpseo_sitemaps->set_sitemap( $sitemap );
 
 	}
 
@@ -195,62 +267,6 @@ class Pods_SEO_WPSEO {
 		}
 
 		return $pieces;
-
-	}
-
-	/**
-	 * Generate individual sitemap files.  Called via the 'wpseo_do_sitemap_*' hooks
-	 */
-	public function xml_sitemap () {
-
-		/**
-		 * @global WPSEO_Sitemaps $wpseo_sitemaps
-		 */
-		global $wpseo_sitemaps;
-
-		// Rewrite rules will set sitemap=pods_foo for pods_foo-sitemap.xml
-		$sitemap = get_query_var( 'sitemap' );
-
-		if ( empty( $sitemap ) ) {
-			return;
-		}
-
-		// Get the pod info first, we need to know if there is a 'modified' field to sort on
-		$pod_name = $this->remove_prefix( self::SITEMAP_PREFIX, $sitemap );
-		$pod = pods_api( $pod_name );
-		$params = array( 'limit' => -1 );
-		$params[ 'orderby' ] = ( isset( $pod->fields[ 'modified' ] ) ) ? 't.modified DESC' : 't.ID DESC';
-
-		// Load all the sorted items
-		$pod = pods( $pod_name, $params );
-
-		//Build the full sitemap
-		$sitemap = "<urlset xmlns:xsi='http://www.w3.org/2001/XMLSchema-instance' ";
-		$sitemap .= "xsi:schemaLocation='http://www.sitemaps.org/schemas/sitemap/0.9 http://www.sitemaps.org/schemas/sitemap/0.9/sitemap.xsd' ";
-		$sitemap .= "xmlns='http://www.sitemaps.org/schemas/sitemap/0.9'>\n";
-
-		while ( $pod->fetch() ) {
-
-			// Use modified field if it exits, or current date/time
-			$lastmod = $pod->field( 'modified' );
-			if ( !empty( $lastmod ) ) {
-				$lastmod = mysql2date( "Y-m-d\TH:i:s+00:00", $lastmod );
-			}
-			else {
-				$lastmod = date( 'c' );
-			}
-
-			$sitemap .= "<url>\n";
-			$sitemap .= "<loc>" . $pod->display( 'detail_url' ) . "</loc>\n";
-			$sitemap .= "<lastmod>$lastmod</lastmod>\n";
-			$sitemap .= "<changefreq>weekly</changefreq>\n"; // ToDo: provide filter
-			$sitemap .= "<priority>0.5</priority>\n"; // ToDo: provide filter
-			$sitemap .= "</url>\n";
-		}
-
-		$sitemap .= "</urlset>\n";
-
-		$wpseo_sitemaps->set_sitemap( $sitemap );
 
 	}
 
@@ -288,6 +304,16 @@ class Pods_SEO_WPSEO {
 		$output = $output_input . $output_label;
 
 		return $output . '<br class="clear" />';
+
+	}
+
+	/**
+	 * @return int
+	 */
+	private function get_max_entries () {
+
+		$xml_options = get_option( 'wpseo_xml' );
+		return ( isset( $xml_options[ 'entries-per-page' ] ) && $xml_options[ 'entries-per-page' ] != '' ) ? intval( $xml_options[ 'entries-per-page' ] ) : 1000;
 
 	}
 
