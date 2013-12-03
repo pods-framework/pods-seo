@@ -188,7 +188,7 @@ class Pods_SEO_WPSEO {
 		 */
 		global $wpseo_sitemaps;
 
-		// Rewrite rules will set sitemap=pods_foo for pods_foo-sitemap.xml
+		// Rewrite rules will set sitemap=pods_foo, sitemap_n=2 for pods_foo-sitemap2.xml
 		$sitemap = get_query_var( 'sitemap' );
 		$page_num = ( 0 != (int) get_query_var( 'sitemap_n' ) ) ? (int) get_query_var( 'sitemap_n' ) : 1;
 
