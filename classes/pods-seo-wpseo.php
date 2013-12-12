@@ -139,7 +139,11 @@ class Pods_SEO_WPSEO {
 			}
 
 			// Break down into multiple xml files if needed
-			$item_count = pods( $pod_name )->find()->total_found();
+			$params = array();
+			$params = apply_filters( 'pods_seo_sitemap_params', $params, $pod_name );
+			$params = apply_filters( 'pods_seo_sitemap_params_' . $pod_name, $params );
+
+			$item_count = pods( $pod_name )->find( $params )->total_found();
 			$pages = ( $item_count > $this->get_max_entries() ) ? (int) ceil( $item_count / $this->get_max_entries() ) : 1;
 			for ( $i = 0; $i < $pages; $i++ ) {
 
@@ -150,6 +154,10 @@ class Pods_SEO_WPSEO {
 						'limit'   => 1,
 						'offset'  => $this->get_max_entries() * $i
 					);
+
+					$params = apply_filters( 'pods_seo_sitemap_params', $params, $pod_name );
+					$params = apply_filters( 'pods_seo_sitemap_params_' . $pod_name, $params );
+
 					$newest = pods( $pod_name, $params );
 					$lastmod = $newest->field( 'modified' );
 					if ( !empty( $lastmod ) ) {
@@ -206,6 +214,9 @@ class Pods_SEO_WPSEO {
 			'offset'  => $this->get_max_entries() * ( $page_num - 1 ),
 			'limit'   => $this->get_max_entries()
 		);
+
+		$params = apply_filters( 'pods_seo_sitemap_params', $params, $pod_name );
+		$params = apply_filters( 'pods_seo_sitemap_params_' . $pod_name, $params );
 
 		// Load all the sorted items
 		$pod = pods( $pod_name, $params );
