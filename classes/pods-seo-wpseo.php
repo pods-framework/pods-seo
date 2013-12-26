@@ -196,12 +196,9 @@ class Pods_SEO_WPSEO {
 		 */
 		global $wpseo_sitemaps;
 
-		// ToDo: Stop-gap fix, better solution pending
-		if ( !preg_match( '/.*?([^\/]+)?sitemap(.*?).xml$/', $_SERVER['REQUEST_URI'], $match ) ) {
-			return;
-		}
-		$page_num = $match[2];
-		$sitemap = ltrim( rtrim( $match[1], '-' ), '/' );
+		// Rewrite rules will set sitemap=pods_foo, sitemap_n=2 for pods_foo-sitemap2.xml
+		$sitemap = get_query_var( 'sitemap' );
+		$page_num = ( 0 != (int) get_query_var( 'sitemap_n' ) ) ? (int) get_query_var( 'sitemap_n' ) : 1;
 
 		if ( empty( $sitemap ) ) {
 			return;
@@ -223,10 +220,6 @@ class Pods_SEO_WPSEO {
 
 		// Load all the sorted items
 		$pod = pods( $pod_name, $params );
-
-		if ( 'pod' != $pod->pod_data[ 'type' ] ) {
-			return;
-		}
 
 		//Build the full sitemap
 		$sitemap = "<urlset xmlns:xsi='http://www.w3.org/2001/XMLSchema-instance' ";
