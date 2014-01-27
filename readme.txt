@@ -19,6 +19,8 @@ This plugin requires the [Pods Framework](http://wordpress.org/plugins/pods/) an
 * Adds Advanced Content Types to XML Sitemaps
 * Adds option to choose which Advanced Content Types will be included in XML Sitemaps (Pod must have a Detail Page URL set)
 
+Pods-SEO is designed for use with Pods Advanced Content Types. Other Pods content types integrate with WordPress SEO and other SEO plugins automatically. For more information on SEO and Pods Advanced Content Types please see [this tutorial](http://pods.io/?p=179774) or [this screencast](http://pods.io/?p=179974).
+
 We're looking in the future at integrating with other features from WordPress SEO and integrating with other plugins too.
 
 == Installation ==
