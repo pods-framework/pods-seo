@@ -161,7 +161,7 @@ class Pods_SEO_WPSEO {
 					$newest = pods( $pod_name, $params );
 					$lastmod = $newest->field( 'modified' );
 					if ( !empty( $lastmod ) ) {
-						date( 'c', strtotime( $lastmod ) );
+						$lastmod = date( 'c', strtotime( $lastmod ) );
 					}
 					else {
 						$lastmod = date( 'c' );
