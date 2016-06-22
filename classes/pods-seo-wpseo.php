@@ -1,4 +1,5 @@
 <?php
+
 /**
  * Class Pods_SEO_WPSEO
  */
@@ -13,12 +14,30 @@ class Pods_SEO_WPSEO {
 	const SITEMAP_PREFIX = 'pods_';
 
 	/**
+	 * @var Pods_SEO_WPSEO
+	 */
+	private static $instance;
+
+	/**
+	 * @return Pods_SEO_WPSEO
+	 */
+	public static function get_instance() {
+
+		if ( ! self::$instance ) {
+			self::$instance = new self;
+		}
+
+		return self::$instance;
+
+	}
+
+	/**
 	 *
 	 */
-	public function __construct () {
+	private function __construct() {
 
 		// Stop if WordPress SEO plugin not installed
-		if ( !function_exists( 'wpseo_init' ) ) {
+		if ( ! function_exists( 'wpseo_init' ) ) {
 			return;
 		}
 
@@ -29,19 +48,23 @@ class Pods_SEO_WPSEO {
 	/**
 	 * All the action and filter hooks we tie-in to
 	 */
-	public function register_hooks () {
+	public function register_hooks() {
 
 		// Hooks we always do
 		add_action( 'admin_init', array( $this, 'admin_init' ) );
 		add_action( 'wpseo_xmlsitemaps_config', array( $this, 'xmlsitemaps_config' ) );
 		add_filter( 'wpseo_sitemap_index', array( $this, 'sitemap_index' ) );
 
+		// WP SEO Analysis
+		add_action( 'admin_enqueue_scripts', array( $this, 'admin_enqueue_scripts' ) );
+		add_filter( 'pods_admin_setup_edit_field_options', array( $this, 'pods_edit_field_options' ), 12, 2 );
+
 		// Hooks that are dependent upon the options that have been set
 		$option_name = self::OPTION_NAME;
 		$xml_options = ( function_exists( 'is_network_admin' ) && is_network_admin() ) ? get_site_option( $option_name ) : get_option( $option_name );
 
 		// Nothing more to be done if no options are set
-		if ( !is_array( $xml_options ) || 0 == count( $xml_options ) ) {
+		if ( ! is_array( $xml_options ) || 0 == count( $xml_options ) ) {
 			return;
 		}
 
@@ -54,7 +77,7 @@ class Pods_SEO_WPSEO {
 			$pod = pods_api()->load_pod( $pod_name );
 
 			// Skip if we couldn't find the pod or it doesn't have a detail_url set
-			if ( !is_array( $pod ) || !isset( $pod[ 'options' ][ 'detail_url' ] ) || empty( $pod[ 'options' ][ 'detail_url' ] ) ) {
+			if ( ! is_array( $pod ) || ! isset( $pod['options']['detail_url'] ) || empty( $pod['options']['detail_url'] ) ) {
 				continue;
 			}
 
@@ -68,14 +91,123 @@ class Pods_SEO_WPSEO {
 	/**
 	 * Hook into the settings API
 	 */
-	public function admin_init () {
+	public function admin_init() {
+
 		register_setting( self::OPTION_GROUP, self::OPTION_NAME );
+
+	}
+
+	/**
+	 *
+	 */
+	public function admin_enqueue_scripts() {
+
+		global $pagenow;
+
+		wp_register_script( 'pods-seo', PODS_SEO_DIR, array( 'jquery' ), PODS_SEO_VERSION, true );
+
+		if ( in_array( $pagenow, array( 'post-new.php', 'post.php' ) ) ) {
+			$settings = $this->get_seo_settings();
+
+			if ( ! empty( $settings ) ) {
+				wp_enqueue_script( 'pods-seo' );
+
+				wp_localize_script( 'pods-seo', 'pods_seo_settings', $settings );
+			}
+		}
+
+	}
+
+	/**
+	 * @param array $options
+	 * @param array $pod
+	 */
+	public function pods_edit_field_options( $options, $pod ) {
+
+		if ( 'post_type' == $pod['type'] ) {
+			$analysis_field_types = $this->get_analysis_field_types();
+
+			$options['advanced'][ __( 'Yoast SEO', 'pods-seo' ) ] = array(
+				array(
+					'seo_analysis_exclude' => array(
+						'label'      => __( 'Exclude from WP SEO Analysis', 'pods-seo' ),
+						'type'       => 'boolean',
+						'depends-on' => array(
+							'type' => $analysis_field_types,
+						),
+					),
+				),
+			);
+		}
+
+		return $options;
+
+	}
+
+	/**
+	 * @return array
+	 */
+	public function get_analysis_field_types() {
+
+		$field_types = array(
+			'paragraph',
+			'text',
+			'wysiwyg',
+		);
+
+		$field_types = apply_filters( 'pods_seo_analysis_field_types', $field_types );
+
+		return $field_types;
+
+	}
+
+	/**
+	 * @return array
+	 */
+	public function get_seo_settings() {
+
+		global $typenow;
+
+		$settings = array();
+
+		$pod = pods( $typenow );
+
+		if ( $pod ) {
+			$inputs = array();
+
+			$fields = $pod->fields();
+
+			$analysis_field_types = $this->get_analysis_field_types();
+
+			foreach ( $fields as $field ) {
+				$field = array_merge( $field['options'], $field );
+
+				if ( ! in_array( $field['type'], $analysis_field_types ) ) {
+					continue;
+				}
+
+				$exclude = (boolean) pods_v( 'seo_analysis_exclude', $field, false );
+
+				if ( $exclude ) {
+					continue;
+				}
+
+				$inputs[] = '#pods-form-ui-' . PodsForm::clean( $field['name'] );
+			}
+
+			if ( ! empty( $inputs ) ) {
+				$settings['fields'] = $inputs;
+			}
+		}
+
+		return $settings;
+
 	}
 
 	/**
 	 * Add checkboxes for Pods' ACTs into the XML sitemaps form
 	 */
-	public function xmlsitemaps_config () {
+	public function xmlsitemaps_config() {
 
 		// Look for ACTs with the detail_url set
 		$all_acts = pods_api()->load_pods( array( 'type' => 'pod' ) );
@@ -83,24 +215,24 @@ class Pods_SEO_WPSEO {
 		$available_acts = array();
 
 		foreach ( $all_acts as $this_act ) {
-			if ( isset ( $this_act[ 'options' ][ 'detail_url' ] ) ) {
-				$available_acts[ ] = $this_act;
+			if ( isset ( $this_act['options']['detail_url'] ) ) {
+				$available_acts[] = $this_act;
 			}
 		}
 
 		// Nothing to do if there aren't any ACTs
-		if ( !is_array( $available_acts ) || 0 == count( $available_acts ) ) {
+		if ( ! is_array( $available_acts ) || 0 == count( $available_acts ) ) {
 			return;
 		}
 		?>
 		<h2><?php _e( 'Pods Advanced Content Types', 'pods-seo' ); ?></h2>
 		<p>
-			<?php _e( 'Select the Advanced Content Types you would like to generate sitemaps for' ); ?>:
+			<?php _e( 'Select the Advanced Content Types you would like to generate sitemaps for', 'pods-seo' ); ?>:
 		</p>
 		<?php
 		// Checkboxes for each ACT
 		foreach ( $available_acts as $this_act ) {
-			echo $this->act_checkbox( self::ACT_OPTION_PREFIX . $this_act[ 'name' ], $this_act[ 'label' ] . ' (<code>' . $this_act[ 'name' ] . '</code>)' );
+			echo $this->act_checkbox( self::ACT_OPTION_PREFIX . $this_act['name'], $this_act['label'] . ' (<code>' . $this_act['name'] . '</code>)' );
 		}
 
 	}
@@ -108,7 +240,7 @@ class Pods_SEO_WPSEO {
 	/**
 	 * Add selected Pods ACTs into the sitemap index
 	 */
-	public function sitemap_index () {
+	public function sitemap_index() {
 
 		/** @global WP_Rewrite $wp_rewrite */
 		global $wp_rewrite;
@@ -116,25 +248,25 @@ class Pods_SEO_WPSEO {
 		// Grab the options
 		if ( function_exists( 'is_network_admin' ) && is_network_admin() ) {
 			$xml_options = get_site_option( self::OPTION_NAME );
-		}
-		else {
+		} else {
 			$xml_options = get_option( self::OPTION_NAME );
 		}
 
 		// Nothing to be done if no options are set
-		if ( !is_array( $xml_options ) || 0 == count( $xml_options ) ) {
+		if ( ! is_array( $xml_options ) || 0 == count( $xml_options ) ) {
 			return '';
 		}
 
-		$output = '';
+		$output   = '';
 		$base_url = $wp_rewrite->using_index_permalinks() ? 'index.php/' : '';
+
 		foreach ( $xml_options as $key => $value ) {
 			// $xml_options: key = prefixed pod name, value = 'on'
 			$pod_name = $this->remove_prefix( self::ACT_OPTION_PREFIX, $key );
-			$pod = pods_api()->load_pod( $pod_name );
+			$pod      = pods_api()->load_pod( $pod_name );
 
 			// Skip if we couldn't find the pod or it doesn't have a detail_url set
-			if ( !is_array( $pod ) || !isset( $pod[ 'options' ][ 'detail_url' ] ) ) {
+			if ( ! is_array( $pod ) || ! isset( $pod['options']['detail_url'] ) ) {
 				continue;
 			}
 
@@ -144,11 +276,11 @@ class Pods_SEO_WPSEO {
 			$params = apply_filters( 'pods_seo_sitemap_params_' . $pod_name, $params );
 
 			$item_count = pods( $pod_name )->find( $params )->total_found();
-			$pages = ( $item_count > $this->get_max_entries() ) ? (int) ceil( $item_count / $this->get_max_entries() ) : 1;
-			for ( $i = 0; $i < $pages; $i++ ) {
+			$pages      = ( $item_count > $this->get_max_entries() ) ? (int) ceil( $item_count / $this->get_max_entries() ) : 1;
 
+			for ( $i = 0; $i < $pages; $i ++ ) {
 				// Determine last modified date
-				if ( isset( $pod[ 'fields' ][ 'modified' ] ) ) {
+				if ( isset( $pod['fields']['modified'] ) ) {
 					$params = array(
 						'orderby' => 't.modified DESC',
 						'limit'   => 1,
@@ -158,21 +290,19 @@ class Pods_SEO_WPSEO {
 					$params = apply_filters( 'pods_seo_sitemap_params', $params, $pod_name );
 					$params = apply_filters( 'pods_seo_sitemap_params_' . $pod_name, $params );
 
-					$newest = pods( $pod_name, $params );
+					$newest  = pods( $pod_name, $params );
 					$lastmod = $newest->field( 'modified' );
-					if ( !empty( $lastmod ) ) {
+					if ( ! empty( $lastmod ) ) {
 						date( 'c', strtotime( $lastmod ) );
-					}
-					else {
+					} else {
 						$lastmod = date( 'c' );
 					}
-				}
-				else {
+				} else {
 					$lastmod = date( 'c' );
 				}
 
 				// Build the .xml file name
-				$sitemap_num = ( $pages > 1 ) ? $i + 1 : '';
+				$sitemap_num  = ( $pages > 1 ) ? $i + 1 : '';
 				$xml_filename = self::SITEMAP_PREFIX . $pod_name . '-sitemap' . $sitemap_num . '.xml';
 
 				$output .= "<sitemap>\n";
@@ -189,7 +319,7 @@ class Pods_SEO_WPSEO {
 	/**
 	 * Generate individual sitemap files.  Called via the 'wpseo_do_sitemap_*' hooks
 	 */
-	public function xml_sitemap () {
+	public function xml_sitemap() {
 
 		/**
 		 * @global WPSEO_Sitemaps $wpseo_sitemaps
@@ -197,7 +327,7 @@ class Pods_SEO_WPSEO {
 		global $wpseo_sitemaps;
 
 		// Rewrite rules will set sitemap=pods_foo, sitemap_n=2 for pods_foo-sitemap2.xml
-		$sitemap = get_query_var( 'sitemap' );
+		$sitemap  = get_query_var( 'sitemap' );
 		$page_num = ( 0 != (int) get_query_var( 'sitemap_n' ) ) ? (int) get_query_var( 'sitemap_n' ) : 1;
 
 		if ( empty( $sitemap ) ) {
@@ -206,9 +336,9 @@ class Pods_SEO_WPSEO {
 
 		// Get the pod info first, we need to know if there is a 'modified' field to sort on
 		$pod_name = $this->remove_prefix( self::SITEMAP_PREFIX, $sitemap );
-		$pod = pods_api( $pod_name );
+		$pod      = pods_api( $pod_name );
 
-		$sort = ( isset( $pod->fields[ 'modified' ] ) ) ? 't.modified DESC' : 't.ID DESC';
+		$sort   = ( isset( $pod->fields['modified'] ) ) ? 't.modified DESC' : 't.ID DESC';
 		$params = array(
 			'orderby' => $sort,
 			'offset'  => $this->get_max_entries() * ( $page_num - 1 ),
@@ -227,13 +357,12 @@ class Pods_SEO_WPSEO {
 		$sitemap .= "xmlns='http://www.sitemaps.org/schemas/sitemap/0.9'>\n";
 
 		while ( $pod->fetch() ) {
-
 			// Use modified field if it exits, or current date/time
 			$lastmod = $pod->field( 'modified' );
-			if ( !empty( $lastmod ) ) {
+
+			if ( ! empty( $lastmod ) ) {
 				$lastmod = date( 'c', strtotime( $lastmod ) );
-			}
-			else {
+			} else {
 				$lastmod = date( 'c' );
 			}
 
@@ -258,10 +387,10 @@ class Pods_SEO_WPSEO {
 	 *
 	 * @return mixed
 	 */
-	public function ping_search_engines ( $pieces ) {
+	public function ping_search_engines( $pieces ) {
 
 		// Bail if WordPress SEO isn't activated
-		if ( !function_exists( 'wpseo_ping_search_engines' ) ) {
+		if ( ! function_exists( 'wpseo_ping_search_engines' ) ) {
 			return $pieces;
 		}
 
@@ -272,8 +401,7 @@ class Pods_SEO_WPSEO {
 
 		if ( defined( 'YOAST_SEO_PING_IMMEDIATELY' ) && YOAST_SEO_PING_IMMEDIATELY ) {
 			wpseo_ping_search_engines();
-		}
-		else {
+		} else {
 			wp_schedule_single_event( ( time() + 300 ), 'wpseo_ping_search_engines' );
 		}
 
@@ -289,18 +417,17 @@ class Pods_SEO_WPSEO {
 	 *
 	 * @return string
 	 */
-	private function act_checkbox ( $var, $label ) {
+	private function act_checkbox( $var, $label ) {
 
 		$option_name = self::OPTION_NAME;
 
 		if ( function_exists( 'is_network_admin' ) && is_network_admin() ) {
 			$options = get_site_option( $option_name );
-		}
-		else {
+		} else {
 			$options = get_option( $option_name );
 		}
 
-		if ( !isset( $options[ $var ] ) ) {
+		if ( ! isset( $options[ $var ] ) ) {
 			$options[ $var ] = false;
 		}
 
@@ -309,10 +436,10 @@ class Pods_SEO_WPSEO {
 		}
 
 		$output_label = '<label for="' . esc_attr( $var ) . '">' . $label . '</label>';
-		$class = 'checkbox double';
+		$class        = 'checkbox double';
 
 		$output_input = "<input class='$class' type='checkbox' id='" . esc_attr( $var ) . "' name='" . esc_attr( $option_name ) . "[" . esc_attr( $var ) . "]' " . checked( $options[ $var ], 'on', false ) . '/>';
-		$output = $output_input . $output_label;
+		$output       = $output_input . $output_label;
 
 		return $output . '<br class="clear" />';
 
@@ -321,10 +448,11 @@ class Pods_SEO_WPSEO {
 	/**
 	 * @return int
 	 */
-	private function get_max_entries () {
+	private function get_max_entries() {
 
 		$xml_options = get_option( 'wpseo_xml' );
-		return ( isset( $xml_options[ 'entries-per-page' ] ) && $xml_options[ 'entries-per-page' ] != '' ) ? intval( $xml_options[ 'entries-per-page' ] ) : 1000;
+
+		return ( isset( $xml_options['entries-per-page'] ) && $xml_options['entries-per-page'] != '' ) ? intval( $xml_options['entries-per-page'] ) : 1000;
 
 	}
 
@@ -334,7 +462,7 @@ class Pods_SEO_WPSEO {
 	 *
 	 * @return string
 	 */
-	private function remove_prefix ( $needle, $haystack ) {
+	private function remove_prefix( $needle, $haystack ) {
 
 		if ( substr( $haystack, 0, strlen( $needle ) ) == $needle ) {
 			return substr( $haystack, strlen( $needle ) );
@@ -343,4 +471,5 @@ class Pods_SEO_WPSEO {
 		return $haystack;
 
 	}
+
 }
