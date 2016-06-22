@@ -279,6 +279,8 @@ class Pods_SEO_WPSEO {
 			$pages      = ( $item_count > $this->get_max_entries() ) ? (int) ceil( $item_count / $this->get_max_entries() ) : 1;
 
 			for ( $i = 0; $i < $pages; $i ++ ) {
+				$lastmod = null;
+
 				// Determine last modified date
 				if ( isset( $pod['fields']['modified'] ) ) {
 					$params = array(
@@ -292,12 +294,13 @@ class Pods_SEO_WPSEO {
 
 					$newest  = pods( $pod_name, $params );
 					$lastmod = $newest->field( 'modified' );
+
 					if ( ! empty( $lastmod ) ) {
-						date( 'c', strtotime( $lastmod ) );
-					} else {
-						$lastmod = date( 'c' );
+						$lastmod = date( 'c', strtotime( $lastmod ) );
 					}
-				} else {
+				}
+
+				if ( empty( $lastmod ) ) {
 					$lastmod = date( 'c' );
 				}
 
