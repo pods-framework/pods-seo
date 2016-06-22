@@ -1,14 +1,14 @@
 === Pods SEO ===
 Contributors: pglewis, sc0ttkclark
 Donate link: http://podsfoundation.org/donate/
-Tags: pods, seo, xml sitemaps
+Tags: pods, seo, analysis, xml sitemaps
 Requires at least: 3.6
 Tested up to: 3.7.1
 Stable tag: 1.0
 License: GPLv2 or later
 License URI: http://www.gnu.org/licenses/gpl-2.0.html
 
-Pods SEO integrates Pods Advanced Content Types with WordPress SEO XML Sitemaps
+Integrates with WP SEO Analysis for custom fields and Pods Advanced Content Types with WordPress SEO XML Sitemaps
 
 == Description ==
 
@@ -16,10 +16,13 @@ This plugin requires the [Pods Framework](http://wordpress.org/plugins/pods/) an
 
 = Our WordPress SEO plugin integration includes =
 
+* Includes custom field values in a post type for WP SEO Analysis (Requires Pod)
 * Adds Advanced Content Types to XML Sitemaps
 * Adds option to choose which Advanced Content Types will be included in XML Sitemaps (Pod must have a Detail Page URL set)
 
-Pods-SEO is designed for use with Pods Advanced Content Types. Other Pods content types integrate with WordPress SEO and other SEO plugins automatically. For more information on SEO and Pods Advanced Content Types please see [this tutorial](http://pods.io/?p=179774) or [this screencast](http://pods.io/?p=179974).
+Pods SEO is designed for use with Pods Advanced Content Types. Other Pods content types integrate with WordPress SEO and other SEO plugins automatically. For more information on SEO and Pods Advanced Content Types please see [this tutorial](http://pods.io/?p=179774) or [this screencast](http://pods.io/?p=179974).
+
+WP SEO Analysis integration includes all Text, Paragraph, and WYSIWYG field content automatically. You can choose to exclude individual fields by editing those fields options under the 'Advanced Field Options' tab.
 
 We're looking in the future at integrating with other features from WordPress SEO and integrating with other plugins too.
 
@@ -43,6 +46,10 @@ Check out our GitHub for a list of contributors, or search our GitHub issues to 
 [github.com/pods-framework/pods-seo/graphs/contributors](https://github.com/pods-framework/pods-seo/graphs/contributors)
 
 == Changelog ==
+
+= 2.0 - June 24th, 2016 =
+* Added WP SEO Analysis integration
+* Fixed assignment bug issues with $lastmod (props to @avhaliullin for finding the bug and outlining the fix)
 
 = 1.0 - December 3rd, 2013 =
 * First official release!
