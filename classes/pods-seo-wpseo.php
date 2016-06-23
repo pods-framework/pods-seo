@@ -135,6 +135,14 @@ class Pods_SEO_WPSEO {
 						'type' => $analysis_field_types,
 					),
 				),
+				'_seo_analysis_notice' => array(
+					'label'      => __( 'Exclude from WP SEO Analysis', 'pods-seo' ),
+					'type'       => 'html',
+					'description' => 'This field does not currently support WP SEO Analysis integration.',
+					'excludes-on' => array(
+						'type' => $analysis_field_types,
+					),
+				),
 			);
 		}
 
