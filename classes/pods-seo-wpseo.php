@@ -128,13 +128,11 @@ class Pods_SEO_WPSEO {
 			$analysis_field_types = $this->get_analysis_field_types();
 
 			$options['advanced'][ __( 'Yoast SEO', 'pods-seo' ) ] = array(
-				array(
-					'seo_analysis_exclude' => array(
-						'label'      => __( 'Exclude from WP SEO Analysis', 'pods-seo' ),
-						'type'       => 'boolean',
-						'depends-on' => array(
-							'type' => $analysis_field_types,
-						),
+				'seo_analysis_exclude' => array(
+					'label'      => __( 'Exclude from WP SEO Analysis', 'pods-seo' ),
+					'type'       => 'boolean',
+					'depends-on' => array(
+						'type' => $analysis_field_types,
 					),
 				),
 			);
