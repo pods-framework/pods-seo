@@ -2,37 +2,46 @@ jQuery( window ).on( 'YoastSEO:ready', function() {
 
 	YoastSEO.app.registerPlugin( 'Pods_Content_Analysis', { status : 'loading' } );
 
-	var pods_field_content = '',
-		pods_key,
-		$pods_field,
-		pods_value;
+	var pods_field_content = '';
 
-	for ( pods_key in pods_seo_settings.fields ) {
-		$pods_field = jQuery( pods_seo_settings.fields[ pods_key ] );
+	function pods_build_content() {
 
-		if ( $pods_field[0] ) {
-			pods_value = '';
+		var pods_key,
+			$pods_field,
+			pods_value;
 
-			$pods_field.each( function() {
+		pods_field_content = '';
 
-				var value = pods_get_tinymce_content( jQuery( this ) );
+		for ( pods_key in pods_seo_settings.fields ) {
+			$pods_field = jQuery( pods_seo_settings.fields[ pods_key ] );
 
-				if ( '' !== value ) {
-					pods_value += ' ' + value;
+			if ( $pods_field[0] ) {
+				pods_value = '';
+
+				$pods_field.each( function() {
+
+					var value = pods_get_tinymce_content( jQuery( this ) );
+
+					if ( '' !== value ) {
+						pods_value += ' ' + value;
+					}
+
+				} );
+
+				if ( '' !== pods_value ) {
+					pods_field_content += ' ' + pods_value;
 				}
-
-			} );
-
-			if ( '' !== pods_value ) {
-				pods_field_content += ' ' + pods_value;
 			}
 		}
+
 	}
 
 	YoastSEO.app.pluginReady( 'Pods_Content_Analysis' );
 	YoastSEO.app.registerModification( 'content', pods_append_content, 'Pods_Content_Analysis', 50 );
 
 	function pods_append_content( content ) {
+
+		pods_build_content();
 
 		if ( '' !== pods_field_content ) {
 			content += ' ' + pods_field_content;

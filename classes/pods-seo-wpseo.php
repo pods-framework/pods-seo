@@ -104,7 +104,7 @@ class Pods_SEO_WPSEO {
 
 		global $pagenow;
 
-		wp_register_script( 'pods-seo', PODS_SEO_DIR, array( 'jquery' ), PODS_SEO_VERSION, true );
+		wp_register_script( 'pods-seo', PODS_SEO_URL . 'assets/pods-seo.js', array( 'jquery' ), PODS_SEO_VERSION, true );
 
 		if ( in_array( $pagenow, array( 'post-new.php', 'post.php' ) ) ) {
 			$settings = $this->get_seo_settings();
@@ -190,7 +190,7 @@ class Pods_SEO_WPSEO {
 					continue;
 				}
 
-				$inputs[] = '#pods-form-ui-' . PodsForm::clean( $field['name'] );
+				$inputs[] = '#pods-form-ui-pods-meta-' . PodsForm::clean( $field['name'] );
 			}
 
 			if ( ! empty( $inputs ) ) {
