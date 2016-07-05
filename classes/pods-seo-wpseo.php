@@ -159,6 +159,7 @@ class Pods_SEO_WPSEO {
 			'paragraph',
 			'text',
 			'wysiwyg',
+			'file',
 		);
 
 		$field_types = apply_filters( 'pods_seo_analysis_field_types', $field_types );
@@ -180,6 +181,8 @@ class Pods_SEO_WPSEO {
 
 		if ( $pod ) {
 			$inputs = array();
+			$inputs['images'] = array();
+			$inputs['text'] = array();
 
 			$fields = $pod->fields();
 
@@ -198,7 +201,17 @@ class Pods_SEO_WPSEO {
 					continue;
 				}
 
-				$inputs[] = '#pods-form-ui-pods-meta-' . PodsForm::clean( $field['name'] );
+				switch ( $field['type'] ) {
+					case 'file':
+						// Only support images
+						if ( ! empty( $field['file_type'] ) && $field['file_type'] == 'images' ) {
+							$inputs['images'][] = '#pods-form-ui-pods-meta-' . PodsForm::clean( $field['name'] );
+						}
+						break;
+					default:
+						$inputs['text'][] = '#pods-form-ui-pods-meta-' . PodsForm::clean( $field['name'] );
+						break;
+				}
 			}
 
 			if ( ! empty( $inputs ) ) {
