@@ -129,8 +129,10 @@ jQuery( window ).on( 'YoastSEO:ready', function() {
 					var alt = '';
 
 					if ( jQuery( '.pods-flex-name input', this ).length ) {
+						// Titles are editable
 						alt = jQuery( '.pods-flex-name input', this ).val();
 					} else {
+						// Just the image titles (not advisable for good analysis)
 						alt = jQuery( '.pods-flex-name', this ).text();
 					}
 					content += ' <img src="' + img + '" alt="' + alt.trim() + '" />';
@@ -146,8 +148,10 @@ jQuery( window ).on( 'YoastSEO:ready', function() {
 					var alt = '';
 
 					if ( jQuery( '.pods-file-name input', this ).length ) {
+						// Titles are editable
 						alt = jQuery( '.pods-file-name input', this ).val();
 					} else {
+						// Just the image titles (not advisable for good analysis)
 						alt = jQuery( '.pods-file-name', this ).text();
 					}
 					content += ' <img src="' + img + '" alt="' + alt.trim() + '" />';
