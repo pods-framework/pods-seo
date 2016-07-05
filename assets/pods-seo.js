@@ -112,7 +112,7 @@ jQuery( window ).on( 'YoastSEO:ready', function() {
 
 	/**
 	 * Get image content from image fields and convert them to a HTML string for analyzing
-	 * @since 2.1
+	 * @since 2.0.1
 	 */
 	function pods_get_image_content( $element ) {
 
