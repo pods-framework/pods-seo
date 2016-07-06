@@ -107,7 +107,7 @@ class Pods_SEO_WPSEO {
 
 		wp_register_script( 'pods-seo', PODS_SEO_URL . 'assets/pods-seo.js', array( 'jquery' ), PODS_SEO_VERSION, true );
 
-		if ( in_array( $pagenow, array( 'post-new.php', 'post.php' ) ) ) {
+		if ( in_array( $pagenow, array( 'post-new.php', 'post.php', 'term.php' ) ) ) {
 			$settings = $this->get_seo_settings();
 
 			if ( ! empty( $settings ) ) {
@@ -127,7 +127,7 @@ class Pods_SEO_WPSEO {
 	 */
 	public function pods_edit_field_options( $options, $pod ) {
 
-		if ( 'post_type' == $pod['type'] ) {
+		if ( in_array( $pod['type'], array( 'post_type', 'taxonomy', 'media' ) ) ) {
 			$analysis_field_types = $this->get_analysis_field_types();
 
 			$options['advanced'][ __( 'Yoast SEO', 'pods-seo' ) ] = array(
