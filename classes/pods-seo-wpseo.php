@@ -54,6 +54,7 @@ class Pods_SEO_WPSEO {
 		add_action( 'admin_init', array( $this, 'admin_init' ) );
 		add_action( 'wpseo_xmlsitemaps_config', array( $this, 'xmlsitemaps_config' ) );
 		add_filter( 'wpseo_sitemap_index', array( $this, 'sitemap_index' ) );
+		add_filter( 'wpseo_sitemap_entry', array( $this, 'sitemap_entry'), 10, 3 );
 
 		// WP SEO Analysis
 		add_action( 'admin_enqueue_scripts', array( $this, 'admin_enqueue_scripts' ) );
@@ -121,6 +122,8 @@ class Pods_SEO_WPSEO {
 	/**
 	 * @param array $options
 	 * @param array $pod
+	 * 
+	 * @return array
 	 */
 	public function pods_edit_field_options( $options, $pod ) {
 
@@ -142,6 +145,28 @@ class Pods_SEO_WPSEO {
 					'excludes-on' => array(
 						'type' => $analysis_field_types,
 					),
+				),
+			);
+		}
+
+		// Users can also have sitemaps
+		if ( in_array( $pod['type'], array( 'post_type', 'taxonomy', 'media', 'user' ) ) ) {
+			// Image sitemaps only
+			$options['advanced'][ __( 'Yoast SEO', 'pods-seo' ) ]['seo_sitemap_exclude'] = array(
+				'label'      => __( 'Exclude from WP SEO XML Sitemap', 'pods-seo' ),
+				'type'       => 'boolean',
+				'depends-on' => array(
+					'type' => 'file',
+					'file_type' => 'images',
+				),
+			);
+			$options['advanced'][ __( 'Yoast SEO', 'pods-seo' ) ]['_seo_sitemap_notice'] = array(
+				'label'      => __( 'Exclude from WP SEO XML Sitemap', 'pods-seo' ),
+				'type'       => 'html',
+				'description' => 'This field does not currently support WP SEO XML Sitemap integration.',
+				'excludes-on' => array(
+					'type' => 'file',
+					'file_type' => 'images',
 				),
 			);
 		}
@@ -491,6 +516,129 @@ class Pods_SEO_WPSEO {
 		}
 
 		return $haystack;
+
+	}
+
+	/**
+	 * @since 2.0.1
+	 * 
+	 * @param $entry The current XML entry data
+	 * @param $type The object type
+	 * @param $object The object
+	 *
+	 * @return array
+	 */
+	public function sitemap_entry( $entry, $type = '', $object = null ) {
+
+		/**
+		 * Get object data
+		 * 
+		 * 'post' >> WP_Post >> Stands for all post_types including attachments (media)
+		 * @see https://developer.wordpress.org/reference/classes/wp_post/
+		 * 
+		 * 'term' >> WP_Term >> Stands for all taxonomies types
+		 * @see https://developer.wordpress.org/reference/classes/wp_term/
+		 * 
+		 * 'user' >> WP_User >>Stands for a user object
+		 * @see https://developer.wordpress.org/reference/classes/wp_user/
+		 */
+		switch( $type ) {
+			case 'post':
+				$pod_name = $object->post_type;
+				$obj_id = $object->ID;
+				break;
+			case 'term':
+				$pod_name = $object->taxonomy;
+				$obj_id = $object->term_id;
+				break;
+			case 'user':
+				$pod_name = 'user';
+				$obj_id = $object->ID;
+				break;
+		}
+
+		if ( ! empty( $pod_name ) && ! empty( $obj_id ) ) {
+
+			$pod = pods_api()->load_pod( $pod_name );
+
+			if ( ! empty( $pod['fields'] ) && is_array( $pod['fields'] ) ) {
+				foreach ( $pod['fields'] as $field_name => $field ) {
+
+					/**
+					 * Check if this is a field for images
+					 * Also check for the exclude from sitemap option
+					 */
+					if (   $field['type'] == 'file' 
+						&& ! empty( $field['options']['file_type'] ) 
+						&& $field['options']['file_type'] == 'images' 
+						&& empty( $field['options']['seo_sitemap_exclude'] ) 
+					) {
+
+						// Get the value of this field
+						$field_images = pods_field( $pod_name, $obj_id, $field_name, false );
+
+						if ( empty( $field_images ) )
+							continue;
+
+						/**
+						 * Fallback for when Pods filters returns a single result not formatted as an array
+						 * If the ID key exists in the main variable then Pods also returned a single result
+						 * @see https://github.com/pods-framework/pods/issues/3614
+						 */
+						if ( ! empty( $field_images['ID'] ) || ! is_array( $field_images ) )
+							$field_images = array( $field_images );
+						
+						foreach ( $field_images as $id => $img ) {
+							/**
+							 * Fallback for when Pods filters returns an array representing a WP_Post object
+							 * @see https://github.com/pods-framework/pods/issues/3614
+							 */
+							if ( is_array( $img ) && isset( $img['ID'] ) ) {
+								// Convert Pods array to an object similar to WP_Post
+								$img = (object) $img;
+							} else {
+								// Get the actual WP_Post object
+								$img = get_post( $img );
+							}
+
+							if ( ! empty( $img ) ) {
+
+								// Get image info
+								$src = wp_get_attachment_image_src( $img->ID, apply_filters( 'pods_seo_sitemap_image_size', 'full' ) );
+
+								if ( ! empty( $src ) ) {
+
+									// Make sure the images key exists and is an array
+									if ( empty( $entry['images'] ) || ! is_array( $entry['images'] ) ) {
+										$entry['images'] = array();
+									}
+
+									/**
+									 * Add the images to the images array for the XML sitemap
+									 * 
+									 * wp_get_attachment_image_src() returns an array of image info (0 = url, 1 = width, 2 = height, 3 = is_intermediate)
+									 * @see https://developer.wordpress.org/reference/functions/wp_get_attachment_image_src/
+									 */
+									$entry['images'][] = array(
+										'src' => $src[0],
+										'title' => $img->post_title,
+										// Could be post_content but it's not likely that the theme will use this for images
+										'alt' => $img->post_title,
+									);
+								}
+							}
+						}
+					}
+				}
+			}
+		}
+
+		// Only keep unique images since it is possible that multiple fields or content areas have the same images
+		if ( ! empty( $entry['images'] ) && is_array( $entry['images'] ) ) {
+			$entry['images'] = array_intersect_key( $entry['images'], array_unique( array_map( 'serialize', $entry['images'] ) ) );
+		}
+
+		return $entry;
 
 	}
 
