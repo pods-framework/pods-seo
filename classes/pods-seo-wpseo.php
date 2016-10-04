@@ -132,7 +132,7 @@ class Pods_SEO_WPSEO {
 	/**
 	 * @param array $options
 	 * @param array $pod
-	 * 
+	 *
 	 * @return array
 	 */
 	public function pods_edit_field_options( $options, $pod ) {
@@ -167,8 +167,8 @@ class Pods_SEO_WPSEO {
 				'type'       => 'boolean',
 				'depends-on' => array(
 					'type' => 'file',
-					'file_type' => 'images',
-				),
+					'file_type' => 'images'
+				)
 			);
 			$options['advanced'][ __( 'Yoast SEO', 'pods-seo' ) ]['_seo_sitemap_notice'] = array(
 				'label'      => __( 'Exclude from WP SEO XML Sitemap', 'pods-seo' ),
@@ -176,8 +176,8 @@ class Pods_SEO_WPSEO {
 				'description' => __( 'This field does not currently support WP SEO XML Sitemap integration.', 'pods-seo' ),
 				'excludes-on' => array(
 					'type' => 'file',
-					'file_type' => 'images',
-				),
+					'file_type' => 'images'
+				)
 			);
 		}
 
@@ -531,7 +531,7 @@ class Pods_SEO_WPSEO {
 
 	/**
 	 * @since 2.0.1
-	 * 
+	 *
 	 * @param $entry The current XML entry data
 	 * @param $type The object type
 	 * @param $object The object
@@ -542,13 +542,13 @@ class Pods_SEO_WPSEO {
 
 		/**
 		 * Get object data
-		 * 
+		 *
 		 * 'post' >> WP_Post >> Stands for all post_types including attachments (media)
 		 * @see https://developer.wordpress.org/reference/classes/wp_post/
-		 * 
+		 *
 		 * 'term' >> WP_Term >> Stands for all taxonomies types
 		 * @see https://developer.wordpress.org/reference/classes/wp_term/
-		 * 
+		 *
 		 * 'user' >> WP_User >>Stands for a user object
 		 * @see https://developer.wordpress.org/reference/classes/wp_user/
 		 */
@@ -578,10 +578,10 @@ class Pods_SEO_WPSEO {
 					 * Check if this is a field for images
 					 * Also check for the exclude from sitemap option
 					 */
-					if (   $field['type'] == 'file' 
-						&& ! empty( $field['options']['file_type'] ) 
-						&& $field['options']['file_type'] == 'images' 
-						&& empty( $field['options']['seo_sitemap_exclude'] ) 
+					if (   $field['type'] == 'file'
+						&& ! empty( $field['options']['file_type'] )
+						&& $field['options']['file_type'] == 'images'
+						&& empty( $field['options']['seo_sitemap_exclude'] )
 					) {
 
 						// Get the value of this field
@@ -597,7 +597,7 @@ class Pods_SEO_WPSEO {
 						 */
 						if ( ! empty( $field_images['ID'] ) || ! is_array( $field_images ) )
 							$field_images = array( $field_images );
-						
+
 						foreach ( $field_images as $id => $img ) {
 							/**
 							 * Fallback for when Pods filters returns an array representing a WP_Post object
@@ -625,7 +625,7 @@ class Pods_SEO_WPSEO {
 
 									/**
 									 * Add the images to the images array for the XML sitemap
-									 * 
+									 *
 									 * wp_get_attachment_image_src() returns an array of image info (0 = url, 1 = width, 2 = height, 3 = is_intermediate)
 									 * @see https://developer.wordpress.org/reference/functions/wp_get_attachment_image_src/
 									 */
