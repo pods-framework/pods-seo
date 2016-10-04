@@ -151,7 +151,7 @@ class Pods_SEO_WPSEO {
 				'_seo_analysis_notice' => array(
 					'label'      => __( 'Exclude from WP SEO Analysis', 'pods-seo' ),
 					'type'       => 'html',
-					'description' => 'This field does not currently support WP SEO Analysis integration.',
+					'description' => __( 'This field does not currently support WP SEO Analysis integration.', 'pods-seo' ),
 					'excludes-on' => array(
 						'type' => $analysis_field_types,
 					),
@@ -173,7 +173,7 @@ class Pods_SEO_WPSEO {
 			$options['advanced'][ __( 'Yoast SEO', 'pods-seo' ) ]['_seo_sitemap_notice'] = array(
 				'label'      => __( 'Exclude from WP SEO XML Sitemap', 'pods-seo' ),
 				'type'       => 'html',
-				'description' => 'This field does not currently support WP SEO XML Sitemap integration.',
+				'description' => __( 'This field does not currently support WP SEO XML Sitemap integration.', 'pods-seo' ),
 				'excludes-on' => array(
 					'type' => 'file',
 					'file_type' => 'images',
