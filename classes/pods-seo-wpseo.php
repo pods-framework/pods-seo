@@ -52,7 +52,7 @@ class Pods_SEO_WPSEO {
 	 * @since 2.1
 	 */
 	public function load_textdomain() {
-		load_plugin_textdomain( 'pods-seo', false, PODS_SEO_DIR . '/languages/' );
+		load_plugin_textdomain( 'pods-seo', false, PODS_SEO_DIR . 'languages/' );
 	}
 
 	/**
