@@ -6,6 +6,8 @@ Description: Integrates with WP SEO Analysis for custom fields and Pods Advanced
 Version: 2.1
 Author: Pods Framework Team
 Author URI: http://pods.io/about/
+Text Domain: pods-seo
+Domain Path: /languages/
 
 Copyright 2013-2016  Pods Foundation, Inc  (email : contact@podsfoundation.org)
 
@@ -41,6 +43,12 @@ function pods_seo_init() {
 	if ( !function_exists( 'pods' ) ) {
 		return;
 	}
+	
+	/**
+	 * Load plugin textdomain
+	 * @since 2.1
+	 */
+	load_plugin_textdomain( 'pods-seo', false, PODS_SEO_DIR . 'languages/' );
 
 	require_once PODS_SEO_DIR . 'classes/pods-seo-wpseo.php';
 
