@@ -43,6 +43,12 @@ function pods_seo_init() {
 	if ( !function_exists( 'pods' ) ) {
 		return;
 	}
+	
+	/**
+	 * Load plugin textdomain
+	 * @since 2.1
+	 */
+	load_plugin_textdomain( 'pods-seo', false, PODS_SEO_DIR . 'languages/' );
 
 	require_once PODS_SEO_DIR . 'classes/pods-seo-wpseo.php';
 
