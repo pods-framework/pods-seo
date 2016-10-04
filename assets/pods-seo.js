@@ -8,15 +8,15 @@ jQuery( window ).on( 'YoastSEO:ready', function() {
 
 		var pods_key,
 			$pods_field,
-			pods_value;
+			pods_value = '';
 
 		pods_field_content = '';
 
-		for ( pods_key in pods_seo_settings.fields ) {
-			$pods_field = jQuery( pods_seo_settings.fields[ pods_key ] );
+		// Text
+		for ( pods_key in pods_seo_settings.fields.text ) {
+			$pods_field = jQuery( pods_seo_settings.fields.text[ pods_key ] );
 
 			if ( $pods_field[0] ) {
-				pods_value = '';
 
 				$pods_field.each( function() {
 
@@ -28,10 +28,30 @@ jQuery( window ).on( 'YoastSEO:ready', function() {
 
 				} );
 
-				if ( '' !== pods_value ) {
-					pods_field_content += ' ' + pods_value;
-				}
 			}
+		}
+
+		// Images
+		for ( pods_key in pods_seo_settings.fields.images ) {
+			$pods_field = jQuery( pods_seo_settings.fields.images[ pods_key ] );
+
+			if ( $pods_field[0] ) {
+
+				$pods_field.each( function() {
+
+					var value = pods_get_image_content( jQuery( this ) );
+
+					if ( '' !== value ) {
+						pods_value += ' ' + value;
+					}
+
+				} );
+
+			}
+		}
+
+		if ( '' !== pods_value ) {
+			pods_field_content += ' ' + pods_value;
 		}
 
 	}
@@ -88,6 +108,59 @@ jQuery( window ).on( 'YoastSEO:ready', function() {
 
 		return is_tinymce;
 
+	}
+
+	/**
+	 * Get image content from image fields and convert them to a HTML string for analyzing
+	 * @since 2.0.1
+	 */
+	function pods_get_image_content( $element ) {
+
+		var content = '';
+
+		if ( $element[0] ) {
+			
+			// Pods 2.7+
+			if ( $element.find('.pods-flex-list').length ) {
+
+				$element.find('.pods-flex-item').each( function() {
+
+					var img = jQuery( '.pods-flex-icon img', this ).attr( 'src' );
+					var alt = '';
+
+					if ( jQuery( '.pods-flex-name input', this ).length ) {
+						// Titles are editable
+						alt = jQuery( '.pods-flex-name input', this ).val();
+					} else {
+						// Just the image titles (not advisable for good analysis)
+						alt = jQuery( '.pods-flex-name', this ).text();
+					}
+					content += ' <img src="' + img + '" alt="' + alt.trim() + '" />';
+				} );
+			}
+
+			// Pods < 2.7
+			if ( $element.find('pods-files-list').length ) {
+
+				$element.find('.pods-file').each( function() {
+
+					var img = jQuery( '.pods-file-icon img', this ).attr( 'src' );
+					var alt = '';
+
+					if ( jQuery( '.pods-file-name input', this ).length ) {
+						// Titles are editable
+						alt = jQuery( '.pods-file-name input', this ).val();
+					} else {
+						// Just the image titles (not advisable for good analysis)
+						alt = jQuery( '.pods-file-name', this ).text();
+					}
+					content += ' <img src="' + img + '" alt="' + alt.trim() + '" />';
+				} );
+			}
+
+		}
+
+		return content;
 	}
 
 } );
