@@ -22,7 +22,7 @@ This plugin requires the [Pods Framework](http://wordpress.org/plugins/pods/) an
 
 Pods SEO is designed for use with Pods Advanced Content Types. Other Pods content types integrate with WordPress SEO and other SEO plugins automatically. For more information on SEO and Pods Advanced Content Types please see [this tutorial](http://pods.io/?p=179774) or [this screencast](http://pods.io/?p=179974).
 
-WP SEO Analysis integration includes all Text, Paragraph, and WYSIWYG field content automatically. You can choose to exclude individual fields by editing those fields options under the 'Advanced Field Options' tab.
+WP SEO Analysis integration includes all Text, Image, Paragraph, and WYSIWYG field content automatically. You can choose to exclude individual fields by editing those fields options under the 'Advanced Field Options' tab.
 
 We're looking in the future at integrating with other features from WordPress SEO and integrating with other plugins too.
 
