@@ -41,8 +41,18 @@ class Pods_SEO_WPSEO {
 			return;
 		}
 
+		add_action( 'load_textdomain', array( $this, 'load_textdomain' ) );
+
 		$this->register_hooks();
 
+	}
+
+	/**
+	 * Load plugin textdomain
+	 * @since 2.1
+	 */
+	public function load_textdomain() {
+		load_plugin_textdomain( 'pods-seo', false, PODS_SEO_DIR . '/languages/' );
 	}
 
 	/**
