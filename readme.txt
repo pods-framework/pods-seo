@@ -3,8 +3,8 @@ Contributors: pglewis, sc0ttkclark
 Donate link: http://podsfoundation.org/donate/
 Tags: pods, seo, analysis, xml sitemaps
 Requires at least: 3.6
-Tested up to: 4.5
-Stable tag: 2.0
+Tested up to: 4.6
+Stable tag: 2.1
 License: GPLv2 or later
 License URI: http://www.gnu.org/licenses/gpl-2.0.html
 
@@ -46,6 +46,10 @@ Check out our GitHub for a list of contributors, or search our GitHub issues to 
 [github.com/pods-framework/pods-seo/graphs/contributors](https://github.com/pods-framework/pods-seo/graphs/contributors)
 
 == Changelog ==
+
+= 2.1 - October 4th, 2016 =
+* Added: Support for Image fields in SEO analysis integration
+* Added: Image information added to Yoast SEO XML sitemap entries filter
 
 = 2.0 - June 24th, 2016 =
 * Added WP SEO Analysis integration
