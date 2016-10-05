@@ -629,12 +629,12 @@ class Pods_SEO_WPSEO {
 						}
 					}
 				}
-			}
-		}
 
-		// Only keep unique images since it is possible that multiple fields or content areas have the same images
-		if ( ! empty( $entry['images'] ) && is_array( $entry['images'] ) ) {
-			$entry['images'] = array_intersect_key( $entry['images'], array_unique( array_map( 'serialize', $entry['images'] ) ) );
+				// Only keep unique images since it is possible that multiple fields or content areas have the same images
+				if ( ! empty( $entry['images'] ) && is_array( $entry['images'] ) ) {
+					$entry['images'] = array_intersect_key( $entry['images'], array_unique( array_map( 'serialize', $entry['images'] ) ) );
+				}
+			}
 		}
 
 		return $entry;
