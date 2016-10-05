@@ -152,8 +152,8 @@ class Pods_SEO_WPSEO {
 		// Users can also have sitemaps
 		if ( in_array( $pod['type'], array( 'post_type', 'taxonomy', 'media', 'user' ) ) ) {
 			// Image sitemaps only
-			$options['advanced'][ __( 'Yoast SEO', 'pods-seo' ) ]['seo_sitemap_exclude'] = array(
-				'label'      => __( 'Exclude from WP SEO XML Sitemap', 'pods-seo' ),
+			$options['advanced'][ __( 'Yoast SEO', 'pods-seo' ) ]['seo_sitemap_include'] = array(
+				'label'      => __( 'Include in WP SEO XML Sitemap', 'pods-seo' ),
 				'type'       => 'boolean',
 				'depends-on' => array(
 					'type' => 'file',
@@ -161,7 +161,7 @@ class Pods_SEO_WPSEO {
 				)
 			);
 			$options['advanced'][ __( 'Yoast SEO', 'pods-seo' ) ]['_seo_sitemap_notice'] = array(
-				'label'      => __( 'Exclude from WP SEO XML Sitemap', 'pods-seo' ),
+				'label'      => __( 'Include in WP SEO XML Sitemap', 'pods-seo' ),
 				'type'       => 'html',
 				'description' => __( 'This field does not currently support WP SEO XML Sitemap integration.', 'pods-seo' ),
 				'excludes-on' => array(
@@ -566,12 +566,11 @@ class Pods_SEO_WPSEO {
 
 					/**
 					 * Check if this is a field for images
-					 * Also check for the exclude from sitemap option
+					 * Also check for the include from sitemap option
 					 */
 					if (   $field['type'] == 'file'
-						&& ! empty( $field['options']['file_type'] )
-						&& $field['options']['file_type'] == 'images'
-						&& empty( $field['options']['seo_sitemap_exclude'] )
+						&& 'images' == (string) pods_v( 'file_type', $field['options'], '' )
+						&& true === (boolean) pods_v( 'seo_sitemap_include', $field['options'], false )
 					) {
 
 						// Get the value of this field
