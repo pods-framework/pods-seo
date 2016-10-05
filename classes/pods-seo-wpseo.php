@@ -559,9 +559,9 @@ class Pods_SEO_WPSEO {
 
 		if ( ! empty( $pod_name ) && ! empty( $obj_id ) ) {
 
-			$pod = pods_api()->load_pod( $pod_name );
+			$pod = pods_api()->load_pod( $pod_name, false );
 
-			if ( ! empty( $pod['fields'] ) && is_array( $pod['fields'] ) ) {
+			if ( $pod && ! empty( $pod['fields'] ) && is_array( $pod['fields'] ) ) {
 				foreach ( $pod['fields'] as $field_name => $field ) {
 
 					/**
