@@ -522,9 +522,9 @@ class Pods_SEO_WPSEO {
 	/**
 	 * @since 2.0.1
 	 *
-	 * @param $entry The current XML entry data
-	 * @param $type The object type
-	 * @param $object The object
+	 * @param array $entry The current XML entry data
+	 * @param string $type The object type
+	 * @param object $object The object
 	 *
 	 * @return array
 	 */
