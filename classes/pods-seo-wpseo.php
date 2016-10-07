@@ -562,6 +562,9 @@ class Pods_SEO_WPSEO {
 			$pod = pods_api()->load_pod( $pod_name, false );
 
 			if ( $pod && ! empty( $pod['fields'] ) && is_array( $pod['fields'] ) ) {
+
+				$pod_images = array();
+
 				foreach ( $pod['fields'] as $field_name => $field ) {
 
 					/**
@@ -607,18 +610,13 @@ class Pods_SEO_WPSEO {
 
 								if ( ! empty( $src ) ) {
 
-									// Make sure the images key exists and is an array
-									if ( empty( $entry['images'] ) || ! is_array( $entry['images'] ) ) {
-										$entry['images'] = array();
-									}
-
 									/**
 									 * Add the images to the images array for the XML sitemap
 									 *
 									 * wp_get_attachment_image_src() returns an array of image info (0 = url, 1 = width, 2 = height, 3 = is_intermediate)
 									 * @see https://developer.wordpress.org/reference/functions/wp_get_attachment_image_src/
 									 */
-									$entry['images'][] = array(
+									$pod_images[] = array(
 										'src' => $src[0],
 										'title' => $img->post_title,
 										// Could be post_content but it's not likely that the theme will use this for images
@@ -630,9 +628,19 @@ class Pods_SEO_WPSEO {
 					}
 				}
 
-				// Only keep unique images since it is possible that multiple fields or content areas have the same images
-				if ( ! empty( $entry['images'] ) && is_array( $entry['images'] ) ) {
-					$entry['images'] = array_intersect_key( $entry['images'], array_unique( array_map( 'serialize', $entry['images'] ) ) );
+				// Add the Pod images
+				if ( ! empty( $pod_images ) && is_array( $pod_images ) ) {
+
+					// Only keep unique images since it is possible that multiple fields or content areas have the same images
+					$pod_images = array_intersect_key( $pod_images, array_unique( array_map( 'serialize', $pod_images ) ) );
+
+					// Make sure the images key exists and is an array
+					if ( empty( $entry['images'] ) || ! is_array( $entry['images'] ) ) {
+						$entry['images'] = array();
+					}
+
+					// Append the Pod images to the entry images array
+					$entry['images'] = array_merge( $entry['images'], $pod_images );
 				}
 			}
 		}
