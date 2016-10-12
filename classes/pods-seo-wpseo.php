@@ -171,7 +171,7 @@ class Pods_SEO_WPSEO {
 				'excludes-on' => array(
 					'type' => 'file',
 					'file_type' => 'images'
-				)
+				),
 				'help'       => array(
 				    __( 'Images can be added to your XML Sitemap for additional value, as explained by Yoast.com', 'pods-seo' ),
 				    'https://yoast.com/image-seo/',
