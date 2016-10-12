@@ -158,16 +158,24 @@ class Pods_SEO_WPSEO {
 				'depends-on' => array(
 					'type' => 'file',
 					'file_type' => 'images'
-				)
+				),
+				'help'       => array(
+				    __( 'Images can be added to your XML Sitemap for additional value, as explained by Yoast.com', 'pods-seo' ),
+				    'https://yoast.com/image-seo/',
+				),
 			);
 			$options['advanced'][ __( 'Yoast SEO', 'pods-seo' ) ]['_seo_sitemap_notice'] = array(
-				'label'      => __( 'Include in WP SEO XML Sitemap', 'pods-seo' ),
-				'type'       => 'html',
+				'label'       => __( 'Include in WP SEO XML Sitemap', 'pods-seo' ),
+				'type'        => 'html',
 				'description' => __( 'This field does not currently support WP SEO XML Sitemap integration.', 'pods-seo' ),
 				'excludes-on' => array(
 					'type' => 'file',
 					'file_type' => 'images'
 				)
+				'help'       => array(
+				    __( 'Images can be added to your XML Sitemap for additional value, as explained by Yoast.com', 'pods-seo' ),
+				    'https://yoast.com/image-seo/',
+				),
 			);
 		}
 
