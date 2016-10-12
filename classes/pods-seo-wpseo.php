@@ -152,22 +152,30 @@ class Pods_SEO_WPSEO {
 		// Users can also have sitemaps
 		if ( in_array( $pod['type'], array( 'post_type', 'taxonomy', 'media', 'user' ) ) ) {
 			// Image sitemaps only
-			$options['advanced'][ __( 'Yoast SEO', 'pods-seo' ) ]['seo_sitemap_exclude'] = array(
-				'label'      => __( 'Exclude from WP SEO XML Sitemap', 'pods-seo' ),
+			$options['advanced'][ __( 'Yoast SEO', 'pods-seo' ) ]['seo_sitemap_include'] = array(
+				'label'      => __( 'Include in WP SEO XML Sitemap', 'pods-seo' ),
 				'type'       => 'boolean',
 				'depends-on' => array(
 					'type' => 'file',
 					'file_type' => 'images'
-				)
+				),
+				'help'       => array(
+				    __( 'Images can be added to your XML Sitemap for additional value, as explained by Yoast.com', 'pods-seo' ),
+				    'https://yoast.com/image-seo/',
+				),
 			);
 			$options['advanced'][ __( 'Yoast SEO', 'pods-seo' ) ]['_seo_sitemap_notice'] = array(
-				'label'      => __( 'Exclude from WP SEO XML Sitemap', 'pods-seo' ),
-				'type'       => 'html',
+				'label'       => __( 'Include in WP SEO XML Sitemap', 'pods-seo' ),
+				'type'        => 'html',
 				'description' => __( 'This field does not currently support WP SEO XML Sitemap integration.', 'pods-seo' ),
 				'excludes-on' => array(
 					'type' => 'file',
 					'file_type' => 'images'
 				)
+				'help'       => array(
+				    __( 'Images can be added to your XML Sitemap for additional value, as explained by Yoast.com', 'pods-seo' ),
+				    'https://yoast.com/image-seo/',
+				),
 			);
 		}
 
@@ -522,9 +530,9 @@ class Pods_SEO_WPSEO {
 	/**
 	 * @since 2.0.1
 	 *
-	 * @param $entry The current XML entry data
-	 * @param $type The object type
-	 * @param $object The object
+	 * @param array $entry The current XML entry data
+	 * @param string $type The object type
+	 * @param object $object The object
 	 *
 	 * @return array
 	 */
@@ -559,19 +567,21 @@ class Pods_SEO_WPSEO {
 
 		if ( ! empty( $pod_name ) && ! empty( $obj_id ) ) {
 
-			$pod = pods_api()->load_pod( $pod_name );
+			$pod = pods_api()->load_pod( $pod_name, false );
 
-			if ( ! empty( $pod['fields'] ) && is_array( $pod['fields'] ) ) {
+			if ( $pod && ! empty( $pod['fields'] ) && is_array( $pod['fields'] ) ) {
+
+				$pod_images = array();
+
 				foreach ( $pod['fields'] as $field_name => $field ) {
 
 					/**
 					 * Check if this is a field for images
-					 * Also check for the exclude from sitemap option
+					 * Also check for the include from sitemap option
 					 */
 					if (   $field['type'] == 'file'
-						&& ! empty( $field['options']['file_type'] )
-						&& $field['options']['file_type'] == 'images'
-						&& empty( $field['options']['seo_sitemap_exclude'] )
+						&& 'images' == (string) pods_v( 'file_type', $field['options'], '' )
+						&& true === (boolean) pods_v( 'seo_sitemap_include', $field['options'], false )
 					) {
 
 						// Get the value of this field
@@ -608,18 +618,13 @@ class Pods_SEO_WPSEO {
 
 								if ( ! empty( $src ) ) {
 
-									// Make sure the images key exists and is an array
-									if ( empty( $entry['images'] ) || ! is_array( $entry['images'] ) ) {
-										$entry['images'] = array();
-									}
-
 									/**
 									 * Add the images to the images array for the XML sitemap
 									 *
 									 * wp_get_attachment_image_src() returns an array of image info (0 = url, 1 = width, 2 = height, 3 = is_intermediate)
 									 * @see https://developer.wordpress.org/reference/functions/wp_get_attachment_image_src/
 									 */
-									$entry['images'][] = array(
+									$pod_images[] = array(
 										'src' => $src[0],
 										'title' => $img->post_title,
 										// Could be post_content but it's not likely that the theme will use this for images
@@ -630,12 +635,22 @@ class Pods_SEO_WPSEO {
 						}
 					}
 				}
-			}
-		}
 
-		// Only keep unique images since it is possible that multiple fields or content areas have the same images
-		if ( ! empty( $entry['images'] ) && is_array( $entry['images'] ) ) {
-			$entry['images'] = array_intersect_key( $entry['images'], array_unique( array_map( 'serialize', $entry['images'] ) ) );
+				// Add the Pod images
+				if ( ! empty( $pod_images ) && is_array( $pod_images ) ) {
+
+					// Only keep unique images since it is possible that multiple fields or content areas have the same images
+					$pod_images = array_intersect_key( $pod_images, array_unique( array_map( 'serialize', $pod_images ) ) );
+
+					// Make sure the images key exists and is an array
+					if ( empty( $entry['images'] ) || ! is_array( $entry['images'] ) ) {
+						$entry['images'] = array();
+					}
+
+					// Append the Pod images to the entry images array
+					$entry['images'] = array_merge( $entry['images'], $pod_images );
+				}
+			}
 		}
 
 		return $entry;
