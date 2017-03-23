@@ -1,9 +1,9 @@
 === Pods SEO ===
-Contributors: pglewis, sc0ttkclark
+Contributors: pglewis, keraweb, sc0ttkclark
 Donate link: http://podsfoundation.org/donate/
 Tags: pods, seo, analysis, xml sitemaps
-Requires at least: 3.6
-Tested up to: 4.6
+Requires at least: 4.6
+Tested up to: 4.7
 Stable tag: 2.1
 License: GPLv2 or later
 License URI: http://www.gnu.org/licenses/gpl-2.0.html
@@ -47,7 +47,7 @@ Check out our GitHub for a list of contributors, or search our GitHub issues to 
 
 == Changelog ==
 
-= 2.1 - October 4th, 2016 =
+= 2.1 - March 23rd, 2017 =
 * Added: Support for Image fields in SEO analysis integration
 * Added: Image information added to Yoast SEO XML sitemap entries filter
 
