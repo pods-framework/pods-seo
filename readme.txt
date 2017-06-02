@@ -8,6 +8,8 @@ Stable tag: 2.1
 License: GPLv2 or later
 License URI: http://www.gnu.org/licenses/gpl-2.0.html
 
+Integrates with WP SEO Analysis for custom fields and Pods Advanced Content Types with WordPress SEO XML Sitemaps
+
 == Description ==
 
 This plugin requires the [Pods Framework](http://wordpress.org/plugins/pods/) and [WordPress SEO](http://wordpress.org/plugins/wordpress-seo/) to run.
