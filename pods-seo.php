@@ -51,3 +51,41 @@ function pods_seo_init() {
 
 }
 add_action( 'init', 'pods_seo_init' );
+
+/**
+ * Register add-on with Pods Freemius connection.
+ */
+function pods_seo_freemius() {
+	try {
+		fs_dynamic_init( [
+			'id'               => '5753',
+			'slug'             => 'pods-seo',
+			'type'             => 'plugin',
+			'public_key'       => 'pk_46fa00cfe39af82dd1ed03033bea4',
+			'is_premium'       => false,
+			'has_paid_plans'   => false,
+			'is_org_compliant' => true,
+			'parent'           => [
+				'id'         => '5347',
+				'slug'       => 'pods',
+				'public_key' => 'pk_737105490825babae220297e18920',
+				'name'       => 'Pods',
+			],
+			'menu'             => [
+				'slug'        => 'pods-settings',
+				'contact'     => false,
+				'support'     => false,
+				'affiliation' => false,
+				'account'     => true,
+				'pricing'     => false,
+				'addons'      => true,
+				'parent'      => [
+					'slug' => 'pods',
+				],
+			],
+		] );
+	} catch ( \Exception $exception ) {
+		return;
+	}
+}
+add_action( 'pods_freemius_init', 'pods_seo_freemius' );
