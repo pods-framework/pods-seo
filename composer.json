@@ -1,39 +1,44 @@
 {
-    "name": "pods-framework/pods-seo",
-    "description": "Pods SEO integrates Pods Advanced Content Types with WordPress SEO XML Sitemaps",
-    "type": "wordpress-plugin",
-    "keywords": ["pods", "wordpress", "seo", "yoast seo"],
-    "homepage": "https://github.com/pods-framework/pods-seo",
-    "require": {
-        "php": ">=5.3"
+  "name": "pods-framework/pods-seo",
+  "description": "Pods SEO integrates Pods Advanced Content Types with WordPress SEO XML Sitemaps",
+  "type": "wordpress-plugin",
+  "keywords": [
+    "pods",
+    "wordpress",
+    "seo",
+    "yoast seo"
+  ],
+  "homepage": "https://github.com/pods-framework/pods-seo",
+  "require": {
+    "php": ">=5.3"
+  },
+  "license": "GPL-2.0",
+  "authors": [
+    {
+      "name": "Phil Lewis",
+      "email": "phil@pods.io",
+      "role": "Developer"
     },
-    "license": "GPL-2.0",
-    "authors": [
-        {
-            "name" : "Phil Lewis",
-            "email" : "phil@pods.io",
-            "role" : "Developer"
-        },
-        {
-            "name": "Scott Kingsley Clark",
-            "email": "lol@scottkclark.com",
-            "homepage": "http://scottkclark.com",
-            "role" : "Developer"
-        },
-
-        {
-            "name": "Pods Framework Team",
-            "email": "contact@pods.io",
-            "homepage": "http://pods.io/"
-        }
-    ],
-    "support": {
-        "issues": "https://github.com/pods-framework/pods-seo/issues",
-        "source": "https://github.com/pods-framework/pods-seo"
+    {
+      "name": "Scott Kingsley Clark",
+      "email": "lol@scottkclark.com",
+      "homepage": "http://scottkclark.com",
+      "role": "Developer"
     },
-    "require": {
-        "composer/installers": "~1.0",
-        "wpackagist-plugin/pods": ">=2.3.18",
-        "wpackagist-plugin/wordpress-seo": "*"
+    {
+      "name": "Pods Framework Team",
+      "email": "contact@pods.io",
+      "homepage": "http://pods.io/"
     }
+  ],
+  "support": {
+    "issues": "https://github.com/pods-framework/pods-seo/issues",
+    "source": "https://github.com/pods-framework/pods-seo"
+  },
+  "require": {
+    "php": ">=5.4",
+    "composer/installers": "~1.0",
+    "wpackagist-plugin/pods": ">=2.3.18",
+    "wpackagist-plugin/wordpress-seo": "*"
+  }
 }

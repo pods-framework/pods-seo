@@ -1,5 +1,9 @@
 # Auto detect text files and perform LF normalization
 * text=auto
+/.github export-ignore
+/.wordpress-org export-ignore
+composer.json export-ignore
+phpcs.xml export-ignore
 
 # Custom for Visual Studio
 *.cs     diff=csharp

@@ -3,7 +3,7 @@
 Plugin Name: Pods SEO
 Plugin URI: http://pods.io/
 Description: Integrates with WP SEO Analysis for custom fields and Pods Advanced Content Types with WordPress SEO XML Sitemaps
-Version: 2.1
+Version: 2.2
 Author: Pods Framework Team
 Author URI: http://pods.io/about/
 Text Domain: pods-seo
@@ -25,7 +25,7 @@ along with this program; if not, write to the Free Software
 Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 */
 
-define( 'PODS_SEO_VERSION', '2.1' );
+define( 'PODS_SEO_VERSION', '2.2' );
 define( 'PODS_SEO_URL', plugin_dir_url( __FILE__ ) );
 define( 'PODS_SEO_DIR', plugin_dir_path( __FILE__ ) );
 
@@ -38,8 +38,7 @@ global $pods_seo_wpseo;
  * Initialize plugin
  */
 function pods_seo_init() {
-
-	if ( !function_exists( 'pods' ) ) {
+	if ( ! function_exists( 'pods' ) ) {
 		return;
 	}
 
@@ -48,12 +47,14 @@ function pods_seo_init() {
 	global $pods_seo_wpseo;
 
 	$pods_seo_wpseo = Pods_SEO_WPSEO::get_instance();
-
 }
+
 add_action( 'init', 'pods_seo_init' );
 
 /**
  * Register add-on with Pods Freemius connection.
+ *
+ * @since 2.2
  */
 function pods_seo_freemius() {
 	try {
@@ -88,4 +89,5 @@ function pods_seo_freemius() {
 		return;
 	}
 }
+
 add_action( 'pods_freemius_init', 'pods_seo_freemius' );

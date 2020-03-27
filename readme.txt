@@ -5,7 +5,7 @@ Tags: pods, seo, analysis, xml sitemaps
 Requires at least: 4.6
 Tested up to: 5.4
 Requires PHP: 5.4
-Stable tag: 2.1
+Stable tag: 2.2
 License: GPLv2 or later
 License URI: http://www.gnu.org/licenses/gpl-2.0.html
 
@@ -47,6 +47,10 @@ Check out our GitHub for a list of contributors, or search our GitHub issues to 
 [github.com/pods-framework/pods-seo/graphs/contributors](https://github.com/pods-framework/pods-seo/graphs/contributors)
 
 == Changelog ==
+
+= 2.2 - March 26th, 2020 =
+* Added: Now requiring PHP 5.4+
+* Added: Freemius support when running Pods 2.7.17
 
 = 2.1 - March 23rd, 2017 =
 * Added: Support for Image fields in SEO analysis integration
