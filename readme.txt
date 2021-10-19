@@ -3,7 +3,7 @@ Contributors: pglewis, keraweb, sc0ttkclark
 Donate link: https://pods.io/friends-of-pods/
 Tags: pods, seo, analysis, xml sitemaps
 Requires at least: 4.6
-Tested up to: 5.4
+Tested up to: 5.8
 Requires PHP: 5.4
 Stable tag: 2.2.1
 License: GPLv2 or later
