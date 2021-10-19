@@ -73,7 +73,7 @@ class Pods_SEO_WPSEO {
 			$pod = pods_api()->load_pod( $pod_name );
 
 			// Skip if we couldn't find the pod or it doesn't have a detail_url set
-			if ( ! is_array( $pod ) || ! isset( $pod['options']['detail_url'] ) || empty( $pod['options']['detail_url'] ) ) {
+			if ( ! $pod || empty( $pod['detail_url'] ) ) {
 				continue;
 			}
 
@@ -207,9 +207,7 @@ class Pods_SEO_WPSEO {
 			$analysis_field_types = $this->get_analysis_field_types();
 
 			foreach ( $fields as $field ) {
-				$field = array_merge( $field['options'], $field );
-
-				if ( ! in_array( $field['type'], $analysis_field_types ) ) {
+				if ( ! in_array( $field['type'], $analysis_field_types, true ) ) {
 					continue;
 				}
 
@@ -250,13 +248,13 @@ class Pods_SEO_WPSEO {
 		$available_acts = [];
 
 		foreach ( $all_acts as $this_act ) {
-			if ( isset ( $this_act['options']['detail_url'] ) ) {
+			if ( ! empty( $this_act['detail_url'] ) ) {
 				$available_acts[] = $this_act;
 			}
 		}
 
 		// Nothing to do if there aren't any ACTs
-		if ( ! is_array( $available_acts ) || 0 == count( $available_acts ) ) {
+		if ( empty( $available_acts ) ) {
 			return;
 		}
 		?>
@@ -298,7 +296,7 @@ class Pods_SEO_WPSEO {
 			$pod      = pods_api()->load_pod( $pod_name );
 
 			// Skip if we couldn't find the pod or it doesn't have a detail_url set
-			if ( ! is_array( $pod ) || ! isset( $pod['options']['detail_url'] ) ) {
+			if ( ! $pod || empty( $pod['detail_url'] ) ) {
 				continue;
 			}
 
@@ -536,7 +534,7 @@ class Pods_SEO_WPSEO {
 		if ( ! empty( $pod_name ) && ! empty( $obj_id ) ) {
 			$pod = pods_api()->load_pod( $pod_name, false );
 
-			if ( $pod && ! empty( $pod['fields'] ) && is_array( $pod['fields'] ) ) {
+			if ( $pod && ! empty( $pod['fields'] ) ) {
 				$pod_images = [];
 
 				foreach ( $pod['fields'] as $field_name => $field ) {
@@ -544,7 +542,7 @@ class Pods_SEO_WPSEO {
 					 * Check if this is a field for images
 					 * Also check for the include from sitemap option
 					 */
-					if ( $field['type'] == 'file' && 'images' == (string) pods_v( 'file_type', $field['options'], '' ) && true === (boolean) pods_v( 'seo_sitemap_include', $field['options'], false ) ) {
+					if ( $field['type'] == 'file' && 'images' == (string) pods_v( 'file_type', $field, '' ) && true === (boolean) pods_v( 'seo_sitemap_include', $field, false ) ) {
 						// Get the value of this field
 						$field_images = pods_field( $pod_name, $obj_id, $field_name, false );
 
