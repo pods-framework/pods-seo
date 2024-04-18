@@ -116,57 +116,61 @@ class Pods_SEO_WPSEO {
 	 * @return array
 	 */
 	public function pods_edit_field_options( $options, $pod ) {
+		if ( ! in_array( $pod['type'], [ 'post_type', 'taxonomy', 'media', 'user' ] ) ) {
+			return $options;
+		}
+
+		$options['advanced']['yoast-seo'] = [
+			'label' => __( 'Yoast SEO', 'pods-seo' ),
+			'type'  => 'heading',
+		];
+
 		if ( in_array( $pod['type'], [ 'post_type', 'taxonomy', 'media' ] ) ) {
 			$analysis_field_types = $this->get_analysis_field_types();
 
-			$options['advanced'][ __( 'Yoast SEO', 'pods-seo' ) ] = [
-				'seo_analysis_exclude' => [
-					'label'      => __( 'Exclude from WP SEO Analysis', 'pods-seo' ),
-					'type'       => 'boolean',
-					'depends-on' => [
-						'type' => $analysis_field_types,
-					],
+			$options['advanced']['seo_analysis_exclude'] = [
+				'label'      => __( 'Exclude from WP SEO Analysis', 'pods-seo' ),
+				'type'       => 'boolean',
+				'depends-on' => [
+					'type' => $analysis_field_types,
 				],
-				'_seo_analysis_notice' => [
-					'label'       => __( 'Exclude from WP SEO Analysis', 'pods-seo' ),
-					'type'        => 'html',
-					'description' => __( 'This field does not currently support WP SEO Analysis integration.', 'pods-seo' ),
-					'excludes-on' => [
-						'type' => $analysis_field_types,
-					],
+			];
+			$options['advanced']['_seo_analysis_notice'] = [
+				'label'       => __( 'Exclude from WP SEO Analysis', 'pods-seo' ),
+				'type'        => 'html',
+				'description' => __( 'This field does not currently support WP SEO Analysis integration.', 'pods-seo' ),
+				'excludes-on' => [
+					'type' => $analysis_field_types,
 				],
 			];
 		}
 
-		// Users can also have sitemaps
-		if ( in_array( $pod['type'], [ 'post_type', 'taxonomy', 'media', 'user' ] ) ) {
-			// Image sitemaps only
-			$options['advanced'][ __( 'Yoast SEO', 'pods-seo' ) ]['seo_sitemap_include'] = [
-				'label'      => __( 'Include in WP SEO XML Sitemap', 'pods-seo' ),
-				'type'       => 'boolean',
-				'depends-on' => [
-					'type'      => 'file',
-					'file_type' => 'images',
-				],
-				'help'       => [
-					__( 'Images can be added to your XML Sitemap for additional value, as explained by Yoast.com', 'pods-seo' ),
-					'https://yoast.com/image-seo/',
-				],
-			];
-			$options['advanced'][ __( 'Yoast SEO', 'pods-seo' ) ]['_seo_sitemap_notice'] = [
-				'label'       => __( 'Include in WP SEO XML Sitemap', 'pods-seo' ),
-				'type'        => 'html',
-				'description' => __( 'This field does not currently support WP SEO XML Sitemap integration.', 'pods-seo' ),
-				'excludes-on' => [
-					'type'      => 'file',
-					'file_type' => 'images',
-				],
-				'help'        => [
-					__( 'Images can be added to your XML Sitemap for additional value, as explained by Yoast.com', 'pods-seo' ),
-					'https://yoast.com/image-seo/',
-				],
-			];
-		}
+		// Image sitemaps only
+		$options['advanced']['seo_sitemap_include'] = [
+			'label'      => __( 'Include in WP SEO XML Sitemap', 'pods-seo' ),
+			'type'       => 'boolean',
+			'depends-on' => [
+				'type'      => 'file',
+				'file_type' => 'images',
+			],
+			'help'       => [
+				__( 'Images can be added to your XML Sitemap for additional value, as explained by Yoast.com', 'pods-seo' ),
+				'https://yoast.com/image-seo/',
+			],
+		];
+		$options['advanced']['_seo_sitemap_notice'] = [
+			'label'       => __( 'Include in WP SEO XML Sitemap', 'pods-seo' ),
+			'type'        => 'html',
+			'description' => __( 'This field does not currently support WP SEO XML Sitemap integration.', 'pods-seo' ),
+			'excludes-on' => [
+				'type'      => 'file',
+				'file_type' => 'images',
+			],
+			'help'        => [
+				__( 'Images can be added to your XML Sitemap for additional value, as explained by Yoast.com', 'pods-seo' ),
+				'https://yoast.com/image-seo/',
+			],
+		];
 
 		return $options;
 	}
